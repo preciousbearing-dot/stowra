@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0F1412">
+<title>Stowra Stage 0 test</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<h1>Stowra Stage 0</h1>
+<p>A throwaway test page. It checks, on your phone, what each platform lets an app learn from a link. It is not the app.</p>
+
+<div id="shared" class="card" hidden><b>Share target works.</b> <span id="shared-text" class="kv"></span></div>
+
+<h2>1. Test a link</h2>
+<div class="card">
+  <input id="url" type="url" inputmode="url" placeholder="Paste a link here" aria-label="Link to test">
+  <div class="row">
+    <button id="run" class="primary">Test this link</button>
+    <button id="paste">Paste and test</button>
+  </div>
+</div>
+<div id="results"></div>
+
+<h2>2. Screen recording frame</h2>
+<div class="card">
+  <p>For Instagram: pick a screen recording and see if the phone can pull a thumbnail from it.</p>
+  <input id="video" type="file" accept="video/*" aria-label="Pick a screen recording">
+  <div id="frame-out"></div>
+</div>
+
+<h2>3. Voice note</h2>
+<div class="card">
+  <button id="voice">Start voice test</button>
+  <p id="voice-out" class="kv"></p>
+</div>
+
+<h2>4. Share into this page</h2>
+<div class="card">
+  <p>In Chrome, open the menu and choose Add to Home screen (or Install app). Then, in Instagram, TikTok or YouTube, tap Share and look for "Stowra test" in the list. Tell me whether it appears.</p>
+</div>
+
+<h2>This phone</h2>
+<div id="env" class="card"></div>
+
+<h2>Report (copy this to Claude)</h2>
+<div class="card">
+  <textarea id="report" rows="10" readonly aria-label="Report"></textarea>
+  <div class="row"><button id="copy" class="primary">Copy report</button></div>
+</div>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>
