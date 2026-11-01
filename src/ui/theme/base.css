@@ -1,0 +1,18 @@
+@font-face { font-family: "Newsreader"; src: url("../../../assets/fonts/Newsreader-Variable.ttf") format("truetype"); font-weight: 200 800; font-display: swap; }
+@font-face { font-family: "Manrope"; src: url("../../../assets/fonts/Manrope-Variable.ttf") format("truetype"); font-weight: 200 800; font-display: swap; }
+
+:root {
+  --serif: "Newsreader", Georgia, "Times New Roman", serif;
+  --sans: "Manrope", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --r1: 12px; --r2: 18px; --r3: 24px;
+  --bg: #F6F5F3; --tx: #151412; --t2: #55514B; --mu: #6B665F; --ac: #A85A05; --oa: #FFFFFF;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--tx); font-family: var(--sans); font-size: 16px; line-height: 24px; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+button { font-family: inherit; cursor: pointer; }
+#app { position: fixed; inset: 0; overflow: hidden; padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
+.screen { position: absolute; inset: 0; display: flex; flex-direction: column; padding: 24px; }
+.screen h1 { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 38px; line-height: 44px; letter-spacing: -0.02em; }
+.screen p { margin: 12px 0 0; color: var(--t2); }
+.btn { height: 56px; border-radius: 28px; border: 0; background: var(--ac); color: var(--oa); font-size: 16px; font-weight: 600; padding: 0 24px; }
+.btn:focus-visible, button:focus-visible { outline: 2px solid var(--ac); outline-offset: 2px; }
