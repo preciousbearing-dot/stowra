@@ -24,7 +24,10 @@ signing = '''signingConfigs {
     }
     buildTypes {'''
 s = sub1(r'buildTypes\s*\{', signing, s, 'buildTypes')
-s = sub1(r'(release\s*\{)', r'\1\n            signingConfig signingConfigs.release', s, 'release block')
+# The release block that belongs to buildTypes (the signingConfigs block above also has a "release")
+head, tail = s.split('buildTypes {', 1)
+tail = sub1(r'(release\s*\{)', r'\1\n            signingConfig signingConfigs.release', tail, 'release block')
+s = head + 'buildTypes {' + tail
 open(g, 'w').write(s)
 
 # Keep target SDK 34 for now so the layout is not forced edge to edge. Revisit before any Play Store release.
