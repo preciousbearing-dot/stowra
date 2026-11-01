@@ -67,9 +67,14 @@ jobs:
         working-directory: build
         env:
           K: ${{ secrets.STOWRA_KEYSTORE_B64 }}
+          STOWRA_STORE_PASSWORD: ${{ secrets.STOWRA_STORE_PASSWORD }}
         run: |
           cp -r ../android-build/res/. android/app/src/main/res/
-          echo "$K" | base64 -d > android/app/stowra-release.jks
+          # Phones often add spaces or line breaks when pasting. Strip them, then check the key before decoding.
+          KEY=$(printf '%s' "$K" | tr -d '[:space:]"')
+          echo "Key text length: ${#KEY} (expected 5772)"
+          printf '%s' "$KEY" | base64 -d > android/app/stowra-release.jks || { echo "::error::STOWRA_KEYSTORE_B64 is not valid base64. Re-copy the whole contents of stowra-release.jks.b64 (5772 characters, no extra text)."; exit 1; }
+          keytool -list -keystore android/app/stowra-release.jks -storepass "${STOWRA_STORE_PASSWORD}" | head -4
           python3 ../android-build/patch_gradle.py android "${GITHUB_RUN_NUMBER}" "${VERSION}"
 
       - name: Build the signed APK
