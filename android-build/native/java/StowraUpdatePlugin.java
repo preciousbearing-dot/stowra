@@ -69,7 +69,7 @@ public class StowraUpdatePlugin extends Plugin {
         call.resolve(t == null ? idle() : t.status());
     }
 
-    /** Opens the Android screen where the person allows Knowvia to install updates. */
+    /** Opens the Android screen where the person allows Stowra to install updates. */
     @PluginMethod
     public void openSettings(PluginCall call) {
         try {
