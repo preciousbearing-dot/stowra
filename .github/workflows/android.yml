@@ -2,7 +2,7 @@ name: Build Android app
 
 on:
   push:
-    branches: [main]
+    branches: ['**']
     paths-ignore: ['README.md']
   workflow_dispatch:
 
@@ -10,7 +10,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: android-build
+  group: android-build-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -42,7 +42,7 @@ jobs:
       - name: Collect the web app
         run: |
           mkdir -p build/www
-          rsync -a --exclude '.git' --exclude '.github' --exclude 'android-build' --exclude 'build' --exclude 'README.md' --exclude 'stage0' ./ build/www/
+          rsync -a --exclude '.git' --exclude '.github' --exclude 'android-build' --exclude 'build' --exclude 'README.md' --exclude 'stage0' --exclude 'node_modules' ./ build/www/
           test -f build/www/index.html
           VERSION=$(python3 -c "import json;print(json.load(open('version.json'))['version'])")
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
@@ -70,6 +70,10 @@ jobs:
           STOWRA_STORE_PASSWORD: ${{ secrets.STOWRA_STORE_PASSWORD }}
         run: |
           cp -r ../android-build/res/. android/app/src/main/res/
+          # native code: share sheet, secure storage, updater, main activity
+          JAVA_DIR=android/app/src/main/java/app/stowra/vault
+          mkdir -p "$JAVA_DIR"
+          cp ../android-build/native/java/*.java "$JAVA_DIR"/
           # Phones often add spaces or line breaks when pasting. Strip them, then check the key before decoding.
           KEY=$(printf '%s' "$K" | tr -d '[:space:]"')
           echo "Key text length: ${#KEY} (expected 5772)"
@@ -99,6 +103,7 @@ jobs:
           path: Stowra.apk
 
       - name: Publish a download link
+        if: github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |

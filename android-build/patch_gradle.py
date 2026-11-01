@@ -35,4 +35,35 @@ v = root + '/variables.gradle'
 t = open(v).read()
 t = sub1(r'targetSdkVersion\s*=\s*\d+', 'targetSdkVersion = 34', t, 'targetSdkVersion')
 open(v, 'w').write(t)
+# ---- manifest: share target, update installer, permissions
+m = root + '/app/src/main/AndroidManifest.xml'
+x = open(m).read()
+for perm in ('REQUEST_INSTALL_PACKAGES', 'ACCESS_NETWORK_STATE'):
+    if perm not in x:
+        x = sub1(r'<application', '<uses-permission android:name="android.permission.%s" />\n    <application' % perm, x, 'permission ' + perm)
+if 'ShareActivity' not in x:
+    block = '''<activity android:name=".ShareActivity" android:exported="true" android:label="Stowra" android:theme="@style/StowraOverlay" android:configChanges="orientation|screenSize|keyboardHidden|smallestScreenSize|screenLayout">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="image/*" />
+                <data android:mimeType="application/pdf" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="image/*" />
+            </intent-filter>
+        </activity>
+        <provider android:name=".StowraUpdateProvider" android:authorities="${applicationId}.stowraupdate" android:exported="false" android:grantUriPermissions="true">
+            <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/stowra_update_paths" />
+        </provider>
+    </application>'''
+    x = sub1(r'</application>', block, x, 'application close')
+open(m, 'w').write(x)
 print('patched android project in', root)
