@@ -1,8 +1,4 @@
 node_modules/
 *.jks
 *.keystore
-local.properties
 .env
-.DS_Store
-android/app/build/
-android/.gradle/
