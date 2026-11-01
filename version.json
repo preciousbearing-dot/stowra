@@ -1,0 +1,7 @@
+{
+  "version": "0.1.0",
+  "min": "0.0.0",
+  "notes": [
+    "First Stowra build. Foundation only: themes, storage and the splash screen."
+  ]
+}

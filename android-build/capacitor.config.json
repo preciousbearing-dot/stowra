@@ -1,0 +1,7 @@
+{
+  "appId": "app.stowra.vault",
+  "appName": "Stowra",
+  "webDir": "www",
+  "server": { "androidScheme": "https" },
+  "android": { "allowMixedContent": false }
+}

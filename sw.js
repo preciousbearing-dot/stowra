@@ -3,7 +3,7 @@ const CACHE = 'stowra-shell-1';
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest',
   'assets/fonts/Manrope-Variable.ttf', 'assets/fonts/Newsreader-Variable.ttf',
-  'src/main.js',
+  'src/main.js', 'version.js', 'src/platform/updater.js',
   'src/core/errors.js', 'src/core/events.js', 'src/core/ids.js', 'src/core/models.js', 'src/core/processing.js',
   'src/storage/idb-adapter.js', 'src/storage/memory-adapter.js', 'src/storage/migrations.js', 'src/storage/repository.js',
   'src/ui/theme/base.css', 'src/ui/theme/splash.css', 'src/ui/theme/theme.js', 'src/ui/theme/tokens.js',

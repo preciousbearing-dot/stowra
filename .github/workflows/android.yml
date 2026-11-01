@@ -1,0 +1,104 @@
+name: Build Android app
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ['README.md']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-build
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check the signing secrets exist
+        env:
+          K: ${{ secrets.STOWRA_KEYSTORE_B64 }}
+          P: ${{ secrets.STOWRA_STORE_PASSWORD }}
+        run: |
+          if [ -z "$K" ] || [ -z "$P" ]; then
+            echo "::error::Signing secrets are missing. Add STOWRA_KEYSTORE_B64, STOWRA_STORE_PASSWORD, STOWRA_KEY_ALIAS and STOWRA_KEY_PASSWORD under Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Collect the web app
+        run: |
+          mkdir -p build/www
+          rsync -a --exclude '.git' --exclude '.github' --exclude 'android-build' --exclude 'build' --exclude 'README.md' --exclude 'stage0' ./ build/www/
+          test -f build/www/index.html
+          VERSION=$(python3 -c "import json;print(json.load(open('version.json'))['version'])")
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "Stowra $VERSION"
+
+      - name: Android SDK pieces
+        run: |
+          SDKM="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKM" --licenses >/dev/null || true
+          "$SDKM" --install "platforms;android-36" "build-tools;36.0.0" >/dev/null
+
+      - name: Create the Android project
+        working-directory: build
+        run: |
+          cp ../android-build/capacitor.config.json .
+          npm init -y >/dev/null
+          npm install @capacitor/core@8 @capacitor/cli@8 @capacitor/android@8
+          npx cap add android
+          npx cap sync android
+
+      - name: Icons, signing key and version
+        working-directory: build
+        env:
+          K: ${{ secrets.STOWRA_KEYSTORE_B64 }}
+        run: |
+          cp -r ../android-build/res/. android/app/src/main/res/
+          echo "$K" | base64 -d > android/app/stowra-release.jks
+          python3 ../android-build/patch_gradle.py android "${GITHUB_RUN_NUMBER}" "${VERSION}"
+
+      - name: Build the signed APK
+        working-directory: build/android
+        env:
+          STOWRA_KEYSTORE: stowra-release.jks
+          STOWRA_STORE_PASSWORD: ${{ secrets.STOWRA_STORE_PASSWORD }}
+          STOWRA_KEY_ALIAS: ${{ secrets.STOWRA_KEY_ALIAS }}
+          STOWRA_KEY_PASSWORD: ${{ secrets.STOWRA_KEY_PASSWORD }}
+        run: ./gradlew assembleRelease --no-daemon --stacktrace
+
+      - name: Check the APK is signed
+        run: |
+          APK=$(ls build/android/app/build/outputs/apk/release/*.apk | head -1)
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --print-certs "$APK" | head -5
+          cp "$APK" Stowra.apk
+          ls -la Stowra.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Stowra-android
+          path: Stowra.apk
+
+      - name: Publish a download link
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete apk-latest --cleanup-tag --yes || true
+          gh release create apk-latest Stowra.apk version.json \
+            --title "Stowra Android app ${VERSION}" \
+            --notes "Latest Stowra Android build (version ${VERSION}). Download Stowra.apk, open it, and allow installing from this source if Android asks. Install it over the old one to keep your Keeps." \
+            --target "${GITHUB_SHA}"
