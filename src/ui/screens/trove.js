@@ -51,7 +51,7 @@ export function troveScreen(ctx) {
     const btn = (name, label, fn) => h('button', { 'aria-label': label, onClick: fn }, icon(name, 22));
     el.append(h('div', { class: 'bar-sel' }, h('span', { class: 'n', text: `${ids.length} selected` }),
       state.view === 'bin' ? [btn('restore', 'Restore', async () => { await keeps.bulk(ids, 'restore'); done('Restored'); }), btn('trash', 'Delete for good', async () => { if (await confirmBox('Delete for good?', 'This cannot be undone.')) { await keeps.bulk(ids, 'purge'); done('Deleted'); } })] :
-        [btn('collections', 'Add to a Collection', () => pickCollection(ids, done)), btn('tag', 'Add a tag', async () => { const t = await promptBox('Add a tag', 'Tag'); if (t) { await keeps.bulk(ids, 'tag', t); done('Tag added'); } }),
+        [btn('kiko', 'Ask Kiko about these', () => router.go(`/kiko/keeps/${ids.join(',')}`)), btn('collections', 'Add to a Collection', () => pickCollection(ids, done)), btn('tag', 'Add a tag', async () => { const t = await promptBox('Add a tag', 'Tag'); if (t) { await keeps.bulk(ids, 'tag', t); done('Tag added'); } }),
           btn('archive', state.view === 'archive' ? 'Restore' : 'Archive', async () => { await keeps.bulk(ids, state.view === 'archive' ? 'restore' : 'archive'); done(state.view === 'archive' ? 'Restored' : 'Archived'); }),
           btn('trash', 'Move to bin', async () => { await keeps.bulk(ids, 'trash'); done('Moved to the bin'); })],
       btn('close', 'Clear selection', () => { state.sel.clear(); draw(); })));

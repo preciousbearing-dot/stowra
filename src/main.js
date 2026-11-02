@@ -4,6 +4,7 @@ import { syncNative } from './ui/theme/native-sync.js';
 import { showSplash } from './ui/screens/splash.js';
 import { showPlaceholder } from './ui/screens/placeholder.js';
 import { createKeepService } from './core/keeps.js';
+import { createCreationService } from './core/creations.js';
 import { createPipeline } from './extract/pipeline.js';
 import { EXTRACTORS } from './extract/registry.js';
 import { drainIntoKeeps } from './capture/intake.js';
@@ -43,7 +44,8 @@ export async function startApp(root, repo, persistent) {
   const pipeline = createPipeline({ keeps, extractors: EXTRACTORS, tools });
   const view = h('div', { id: 'view' });
   const leave = [];
-  const ctx = { repo, keeps, pipeline, ai, native, persistent, router: null, errorText: userMessage, onLeave: (f) => leave.push(f) };
+  const creations = createCreationService(repo);
+  const ctx = { repo, keeps, creations, pipeline, ai, native, persistent, router: null, errorText: userMessage, onLeave: (f) => leave.push(f) };
   const nav = createNav({ go: (p) => ctx.router.go(p), onAdd: () => openCapture(ctx) });
   root.append(view, nav.el);
   ctx.router = createRouter(view, buildRoutes(ctx), ({ tab, bare }) => {

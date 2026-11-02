@@ -104,3 +104,21 @@ a.ext { color: var(--ac); font-weight: 600; text-decoration: underline; text-und
 .status.bad { color: #B3361B; } .status.good { color: var(--tx); }
 .keyrow { display: flex; gap: 8px; margin-top: 16px; } .keyrow .field { flex: 1; min-width: 0; }
 select.field { appearance: none; }
+.kiko { display: flex; flex-direction: column; height: 100%; }
+.page.kiko { overflow: hidden; padding: 0; }
+.scope { margin: 4px 24px 0; height: 44px; border-radius: 22px; border: 1px solid var(--ln); background: var(--tile); box-shadow: var(--tileSh); color: var(--tx); display: flex; align-items: center; gap: 8px; padding: 0 14px; font-size: 14px; font-weight: 600; text-align: left; }
+.scope span:nth-child(2) { flex: 1; }
+.msgs { flex: 1; overflow-y: auto; padding: 16px 24px; display: flex; flex-direction: column; gap: 12px; }
+.msg { max-width: 92%; font-size: 16px; line-height: 24px; }
+.msg.me { align-self: flex-end; background: var(--ac); color: var(--oa); padding: 10px 16px; border-radius: 20px 20px 6px 20px; }
+.kiko-msg { align-self: flex-start; background: var(--tile); border: 1px solid var(--ln); box-shadow: var(--tileSh); padding: 14px 16px; border-radius: 20px 20px 20px 6px; max-width: 100%; }
+.kiko-msg.err { color: #B3361B; } .kiko-msg.wait { color: var(--mu); }
+.part + .part { margin-top: 14px; } .part p { margin: 6px 0 0; white-space: pre-wrap; }
+.tag { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: .02em; padding: 3px 10px; border-radius: 10px; background: var(--track); color: var(--t2); }
+.tag.keeps { background: var(--ac); color: var(--oa); } .tag.unsupported { background: #B3361B; color: #fff; }
+.cites { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; } .chip.cite { height: 32px; font-size: 12px; padding: 0 12px; } .chip.cite.un { border-style: dashed; }
+.warn { margin-top: 8px; font-size: 13px; color: #B3361B; }
+.sugg { display: flex; flex-direction: column; gap: 8px; align-items: center; margin-top: 16px; }
+.composer { display: flex; gap: 8px; align-items: flex-end; padding: 8px 16px 12px; border-top: 1px solid var(--ln); background: var(--bg); }
+.composer .field { height: 48px; border-radius: 24px; padding: 12px 18px; flex: 1; min-height: 48px; max-height: 120px; }
+.composer .send { background: var(--ac); color: var(--oa); border: 0; }
