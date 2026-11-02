@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Stowing</title>
+<link rel="stylesheet" href="overlay.css">
+</head>
+<body>
+<div class="scrim" id="scrim"></div>
+<main class="sheet" id="sheet" role="dialog" aria-live="polite" aria-label="Stowing">
+  <div class="handle"></div>
+  <header class="head">
+    <div class="brand">
+      <svg width="28" height="28" viewBox="0 0 108 108" aria-hidden="true"><path d="M54 19C54 19 30 44 30 62a24 24 0 0 0 48 0C78 44 54 19 54 19Z" fill="#E9A53F"/><rect x="43" y="50" width="22" height="26" rx="6" transform="rotate(-10 54 63)" fill="#FBF1D9"/></svg>
+      <span>Stowra</span>
+    </div>
+    <div class="chip" id="srcChip"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg><span id="srcText">Shared item</span></div>
+  </header>
+
+  <div class="stage">
+    <svg class="jar" width="160" height="220" viewBox="0 -40 160 220" aria-hidden="true">
+      <defs>
+        <linearGradient id="gAmber" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFC85A"/><stop offset="1" stop-color="#C97A1A"/></linearGradient>
+        <linearGradient id="gBrass" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E3C27C"/><stop offset="1" stop-color="#A97C34"/></linearGradient>
+        <clipPath id="jarClip"><path d="M48 46V62C48 70 28 76 28 94V138A22 22 0 0 0 50 160H110A22 22 0 0 0 132 138V94C132 76 112 70 112 62V46Z"/></clipPath>
+      </defs>
+      <ellipse cx="80" cy="166" rx="46" ry="5" fill="#000" opacity="0.16"/>
+      <path class="glass" d="M48 46V62C48 70 28 76 28 94V138A22 22 0 0 0 50 160H110A22 22 0 0 0 132 138V94C132 76 112 70 112 62V46Z" stroke-width="1.6" stroke-linejoin="round"/>
+      <g clip-path="url(#jarClip)"><rect class="fill" x="26" y="124" width="108" height="38" fill="url(#gAmber)"/></g>
+      <ellipse class="ripple" cx="80" cy="124" rx="9" ry="2.4" fill="none" stroke="#FFC85A" stroke-width="1.4"/>
+      <path d="M36 100C34 112 34 124 36 134" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity="0.35"/>
+      <g class="drop"><path d="M80 -10C80 -10 70 3 70 12a10 10 0 0 0 20 0C90 3 80 -10 80 -10Z" fill="url(#gAmber)"/></g>
+      <g class="lid"><rect x="42" y="30" width="76" height="18" rx="6" fill="url(#gBrass)"/><rect x="46" y="52" width="68" height="4" rx="2" fill="url(#gBrass)"/></g>
+      <g class="seal"><circle cx="80" cy="102" r="14" fill="#FBF1D9" stroke="#E9A53F" stroke-width="1.6"/><path d="M80 94C80 94 75 100 75 104a5 5 0 0 0 10 0C85 100 80 94 80 94Z" fill="#E9A53F"/></g>
+    </svg>
+  </div>
+
+  <div class="words">
+    <div class="w stowing"><h1>Stowing</h1><p>Putting it in your Trove</p></div>
+    <div class="w stowed"><h1>Stowed</h1><p id="doneText">Your link is safe in your Trove. Stowra will read it in the background.</p></div>
+  </div>
+
+  <section class="reasons" id="reasons" hidden aria-label="Why did you save this?">
+    <div class="rtitle">Why did you save this?</div>
+    <div class="rchips" id="rchips"></div>
+  </section>
+
+  <div class="actions" id="actions">
+    <button class="primary" id="open" type="button">Open Stowra</button>
+    <div class="row">
+      <button class="quiet" id="reason" type="button">Add a reason</button>
+      <button class="quiet strong" id="close" type="button">Keep watching</button>
+    </div>
+  </div>
+</main>
+<script src="overlay.js"></script>
+</body>
+</html>

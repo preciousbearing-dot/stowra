@@ -1,0 +1,51 @@
+/* The Stowing sheet. Colours come from the app's current look (passed in by Android); these are the Bright light defaults. */
+:root { --sf:#FFFFFF; --tx:#151412; --t2:#55514B; --mu:#6B665F; --ac:#A85A05; --oa:#FFFFFF; --ln:rgba(21,20,18,0.09); --track:rgba(21,20,18,0.06); --glass:rgba(21,20,18,0.04); --serif:Georgia,"Times New Roman",serif; --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; height: 100%; background: transparent; font-family: var(--sans); color: var(--tx); overflow: hidden; }
+.scrim { position: fixed; inset: 0; background: rgba(0,0,0,0.5); opacity: 0; animation: fade .3s ease-out forwards; }
+.sheet { position: fixed; left: 0; right: 0; bottom: 0; background: var(--sf); border-top: 1px solid var(--ln); border-radius: 28px 28px 0 0; padding: 12px 24px calc(24px + env(safe-area-inset-bottom)); transform: translateY(100%); animation: up .38s cubic-bezier(.2,.8,.2,1) forwards; max-height: 96vh; overflow: hidden; }
+.handle { width: 40px; height: 4px; border-radius: 2px; margin: 0 auto; background: var(--mu); opacity: .45; }
+.head { margin-top: 14px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.brand { display: flex; align-items: center; gap: 8px; font-family: var(--serif); font-size: 20px; line-height: 24px; }
+.chip { max-width: 55%; height: 36px; border-radius: 18px; background: var(--track); padding: 0 14px; display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 500; color: var(--t2); }
+.chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stage { display: flex; justify-content: center; margin-top: 4px; }
+.jar { overflow: visible; }
+.glass { fill: var(--glass); stroke: var(--t2); }
+.words { position: relative; height: 96px; margin-top: 4px; }
+.w { position: absolute; left: 0; right: 0; top: 0; text-align: center; opacity: 0; }
+.w h1 { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 28px; line-height: 36px; }
+.w p { margin: 6px auto 0; max-width: 300px; font-size: 14px; line-height: 20px; color: var(--t2); }
+.stowing { animation: wIn .4s .3s ease-out forwards, wOut .25s 2.35s ease-in forwards; }
+.stowed { transform: translateY(6px); animation: wIn .45s 2.45s ease-out forwards; }
+.drop { animation: drop .65s .55s cubic-bezier(.55,0,.9,.5) forwards; opacity: 0; transform-box: fill-box; }
+.ripple { opacity: 0; transform-box: fill-box; transform-origin: 50% 50%; animation: ripple .8s 1.2s ease-out forwards; }
+.fill { transform-box: fill-box; transform-origin: 50% 100%; transform: scaleY(0); animation: fill .8s 1.2s cubic-bezier(.3,0,.2,1) forwards; }
+.lid { transform-box: fill-box; opacity: 0; animation: lid .45s 1.95s cubic-bezier(.2,.7,.2,1) forwards; }
+.seal { transform-box: fill-box; transform-origin: 50% 50%; opacity: 0; animation: seal .4s 2.3s cubic-bezier(.2,.8,.2,1) forwards; }
+.actions { margin-top: 8px; opacity: 0; pointer-events: none; animation: wIn .45s 2.7s ease-out forwards; }
+.actions.live { pointer-events: auto; }
+.primary { width: 100%; height: 52px; border-radius: 26px; border: 0; background: var(--ac); color: var(--oa); font: 600 16px var(--sans); }
+.row { margin-top: 8px; display: flex; justify-content: center; gap: 8px; }
+.quiet { height: 44px; border-radius: 22px; border: 0; background: transparent; color: var(--t2); font: 500 14px var(--sans); padding: 0 16px; }
+.quiet.strong { color: var(--tx); }
+button:focus-visible { outline: 2px solid var(--ac); outline-offset: 2px; }
+.reasons { margin-top: 4px; }
+.reasons[hidden] { display: none; }
+.rtitle { font-size: 14px; line-height: 20px; font-weight: 600; text-align: center; }
+.rchips { margin-top: 12px; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.rchips button { height: 44px; border-radius: 22px; padding: 0 16px; border: 1px solid var(--ln); background: transparent; color: var(--t2); font: 500 14px var(--sans); }
+.rchips button.on { background: var(--track); color: var(--tx); border-color: var(--tx); }
+@keyframes fade { to { opacity: 1; } }
+@keyframes up { to { transform: none; } }
+@keyframes wIn { to { opacity: 1; transform: none; } }
+@keyframes wOut { to { opacity: 0; } }
+@keyframes drop { 0% { transform: translateY(-34px); opacity: 0; } 8% { opacity: 1; } 80% { transform: translateY(100px); opacity: 1; } 92% { transform: translateY(104px) scale(1.08, .82); opacity: 1; } 100% { transform: translateY(104px); opacity: 0; } }
+@keyframes ripple { 0% { transform: scale(.3); opacity: 0; } 15% { opacity: .8; } 100% { transform: scale(2.8); opacity: 0; } }
+@keyframes fill { to { transform: scaleY(1); } }
+@keyframes lid { from { transform: translateY(-44px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes seal { from { transform: scale(1.6); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .scrim, .sheet, .stowing, .stowed, .drop, .ripple, .fill, .lid, .seal, .actions { animation: none !important; }
+  .scrim { opacity: 1; } .sheet { transform: none; } .stowing, .drop, .ripple { display: none; } .stowed { opacity: 1; transform: none; } .fill { transform: none; } .lid, .seal { opacity: 1; } .actions { opacity: 1; pointer-events: auto; }
+}

@@ -1,7 +1,10 @@
 {
-  "version": "0.1.0",
+  "version": "0.2.0",
   "min": "0.0.0",
   "notes": [
-    "First Stowra build. Foundation only: themes, storage and the splash screen."
+    "The full first version of Stowra: share anything to it from other apps, keep it in your Trove, and find it again.",
+    "Stowra reads YouTube videos, articles, GitHub repos and PDFs, and keeps a picture of each.",
+    "Connect your own AI key to get summaries, and ask Kiko questions about your Keeps.",
+    "Collections, Creations, a weekly look back, a laptop queue for tools to try, backup, and a PIN lock."
   ]
 }

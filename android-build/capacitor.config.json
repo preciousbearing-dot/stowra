@@ -2,6 +2,15 @@
   "appId": "app.stowra.vault",
   "appName": "Stowra",
   "webDir": "www",
-  "server": { "androidScheme": "https" },
-  "android": { "allowMixedContent": false }
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "allowMixedContent": false
+  },
+  "plugins": {
+    "CapacitorHttp": {
+      "enabled": true
+    }
+  }
 }

@@ -24,6 +24,7 @@ export function userMessage(err) {
   if (err instanceof UserError) return err.message;
   if (err instanceof NetworkError) return 'No connection right now. Your Keeps are safe and this will retry.';
   if (err instanceof ProviderError) return 'The AI provider did not answer. Check your key in Settings.';
+  if (err instanceof ExtractionError && ['rate', 'missing'].includes(err.code)) return err.message;
   if (err instanceof ExtractionError) return 'Stowra could not read this one. It is still saved.';
   if (err instanceof StorageError) return 'Stowra could not save to your phone. Check free space and try again.';
   return 'Something went wrong. Nothing was lost.';
