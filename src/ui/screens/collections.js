@@ -2,6 +2,7 @@ import { h, fill } from '../kit/dom.js';
 import { icon } from '../kit/icons.js';
 import { keepCard, emptyState } from '../kit/cards.js';
 import { menu, confirmBox, promptBox, toast } from '../kit/overlay.js';
+import { suggestSpaces } from './discover.js';
 
 /** Collections, with Creations beside them. Deleting a Collection never deletes Keeps. */
 export function collectionsScreen(ctx) {
@@ -14,7 +15,8 @@ export function collectionsScreen(ctx) {
     fill(el,
       h('div', { class: 'top' }, h('h1', { class: 'title', text: 'Collections' }), h('button', { class: 'iconbtn', 'aria-label': 'New Collection', onClick: async () => { const n = await promptBox('New Collection', 'Name', '', 'Create'); if (n) { await keeps.addCollection(n); draw(); } } }, icon('plus'))),
       h('div', { class: 'seg' }, h('button', { class: 'on', text: 'Collections' }), h('button', { text: 'Creations', onClick: () => router.go('/creations') })),
-      cs.length ? h('div', { style: { marginTop: '8px' } }, cs.map((c, i) => h('button', { class: 'row', onClick: () => router.go(`/collection/${c.id}`) }, icon('collections', 22), h('div', { class: 'grow' }, h('div', { text: c.name }), h('div', { class: 'rs', text: `${counts[i]} ${counts[i] === 1 ? 'Keep' : 'Keeps'}` })), icon('chevron', 18)))) : emptyState('No Collections yet', 'A Collection groups Keeps your way. One Keep can sit in many.'));
+      h('div', { style: { marginTop: '8px' } }, h('button', { class: 'row', onClick: () => router.go('/laptop') }, icon('laptop', 22), h('div', { class: 'grow' }, h('div', { text: 'Laptop queue' }), h('div', { class: 'rs', text: 'Repos and tools to try' })), icon('chevron', 18)), h('button', { class: 'row', onClick: () => suggestSpaces(ctx) }, icon('spark', 22), h('div', { class: 'grow' }, h('div', { text: 'Suggested Spaces' }), h('div', { class: 'rs', text: 'Groups Stowra noticed, you approve' })), icon('chevron', 18))),
+      cs.length ? h('div', {}, cs.map((c, i) => h('button', { class: 'row', onClick: () => router.go(`/collection/${c.id}`) }, icon('collections', 22), h('div', { class: 'grow' }, h('div', { text: c.name }), h('div', { class: 'rs', text: `${counts[i]} ${counts[i] === 1 ? 'Keep' : 'Keeps'}` })), icon('chevron', 18)))) : emptyState('No Collections yet', 'A Collection groups Keeps your way. One Keep can sit in many.'));
   }
   const off = keeps.bus.on('changed', () => { if (el.isConnected) draw(); }); ctx.onLeave(off);
   draw(); return el;

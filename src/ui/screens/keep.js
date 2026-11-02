@@ -5,6 +5,8 @@ import { menu, sheet, confirmBox, promptBox, toast } from '../kit/overlay.js';
 import { native } from '../../platform/native.js';
 import { WHY } from '../../capture/why.js';
 import { readImageFile } from '../../capture/images.js';
+import { relatedTo } from '../../core/discover.js';
+import { keepCard } from '../kit/cards.js';
 
 /** One Keep: cover, why, status, summary, key ideas, reading text, notes, tags, Collections. */
 export async function keepScreen(ctx, { id }) {
@@ -16,6 +18,7 @@ export async function keepScreen(ctx, { id }) {
     const k = await keeps.get(id);
     if (!k) return fill(el, h('div', { class: 'empty' }, h('div', { class: 'h2', text: 'This Keep is gone' }), h('button', { class: 'btn small', text: 'Back to Trove', onClick: () => router.go('/trove') })));
     const cols = await keeps.collectionsOf(id);
+    const related = relatedTo(k, await keeps.list({}));
     const hero = h('div', { style: { position: 'relative' } }, cover(k),
       h('button', { class: 'iconbtn', style: { position: 'absolute', left: '16px', top: '16px', background: 'rgba(0,0,0,.4)', color: '#fff', border: '0' }, 'aria-label': 'Back', onClick: () => router.back() }, icon('back')),
       h('button', { class: 'iconbtn', style: { position: 'absolute', right: '16px', top: '16px', background: 'rgba(0,0,0,.4)', color: '#fff', border: '0' }, 'aria-label': 'More', onClick: () => more(k) }, icon('more')));
@@ -35,6 +38,7 @@ export async function keepScreen(ctx, { id }) {
           k.tags.map((t) => h('button', { class: 'chip', text: t, onClick: () => removeTag(k, t), 'aria-label': `Remove tag ${t}` })),
           h('button', { class: 'chip', onClick: () => addTag(k) }, icon('plus', 16), 'Tag'),
           h('button', { class: 'chip', onClick: () => collectionsSheet(k) }, icon('collections', 16), cols.length ? cols.map((c) => c.name).join(', ') : 'Add to Collection'))),
+      related.length ? h('div', { class: 'sect' }, h('h2', { class: 'h2', text: 'Related Keeps' }), h('div', { class: 'grid', style: { padding: '12px 0 0' } }, related.map((r) => keepCard(r, { onOpen: () => router.go(`/keep/${r.id}`), onHold: () => {} })))) : null,
       h('div', { style: { height: '96px' } }),
       h('div', { class: 'keep-bar' },
         h('button', { class: 'btn', style: { flex: 1, display: 'flex', gap: '10px', alignItems: 'center', justifyContent: 'center' }, onClick: () => router.go(`/kiko/keep/${id}`) }, icon('kiko'), 'Ask Kiko about this'),
@@ -93,6 +97,7 @@ export async function keepScreen(ctx, { id }) {
     f.addEventListener('change', async () => { if (f.files[0]) { try { await keeps.update(id, { thumb: await readImageFile(f.files[0], 640) }); draw(); } catch (e) { toast('Could not use that picture'); } } });
     f.click();
   }
+  keeps.touch(id);
   await draw();
   const off = keeps.bus.on('changed', (c) => { if (el.isConnected && c && c.id === id && c.type === 'update') draw(); });
   ctx.onLeave(off);

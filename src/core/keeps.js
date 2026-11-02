@@ -46,6 +46,9 @@ export function createKeepService(repo) {
     return n;
   }
 
+  /** Remember that a Keep was opened. Quiet: no screen refresh. */
+  async function touch(id) { const k = await repo.keeps.get(id); if (k) await repo.keeps.put({ ...k, openedAt: Date.now() }); }
+
   const archive = (id) => update(id, { archivedAt: Date.now() });
   const unarchive = (id) => update(id, { archivedAt: null });
   const trash = (id) => update(id, { deletedAt: Date.now() });
@@ -108,5 +111,5 @@ export function createKeepService(repo) {
     if (action === 'collection') await addToCollection(arg, ids);
   }
 
-  return { bus, add, update, get: (id) => repo.keeps.get(id), archive, unarchive, trash, restore, purge, sweepBin, list, tags, collections, addCollection, renameCollection, deleteCollection, addToCollection, removeFromCollection, collectionsOf, bulk, repo };
+  return { bus, add, touch, update, get: (id) => repo.keeps.get(id), archive, unarchive, trash, restore, purge, sweepBin, list, tags, collections, addCollection, renameCollection, deleteCollection, addToCollection, removeFromCollection, collectionsOf, bulk, repo };
 }

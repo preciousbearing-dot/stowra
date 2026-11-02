@@ -4,6 +4,7 @@ import { keepScreen } from './screens/keep.js';
 import { collectionsScreen, collectionScreen } from './screens/collections.js';
 import { kikoScreen } from './screens/kiko.js';
 import { creationsScreen, creationScreen } from './screens/creations.js';
+import { rediscoverScreen, reviewScreen, laptopScreen } from './screens/discover.js';
 import { settingsScreen, aiSettingsScreen } from './screens/settings.js';
 
 /** Route table. A route with bare:true hides the bottom navigation. */
@@ -20,6 +21,9 @@ export function buildRoutes(ctx) {
     '/kiko/collection/:id': { tab: 'kiko', bare: true, render: (p) => kikoScreen(ctx, { type: 'collection', collectionId: p.id, label: 'Collection' }) },
     '/creations': { tab: 'collections', render: () => creationsScreen(ctx) },
     '/creation/:id': { tab: 'collections', bare: true, render: (p) => creationScreen(ctx, p) },
+    '/rediscover': { tab: 'trove', bare: true, render: () => rediscoverScreen(ctx) },
+    '/review': { tab: 'trove', bare: true, render: () => reviewScreen(ctx) },
+    '/laptop': { tab: 'collections', bare: true, render: () => laptopScreen(ctx) },
     '/settings': { tab: 'settings', render: () => settingsScreen(ctx) },
     '/settings/ai': { tab: 'settings', bare: true, render: () => aiSettingsScreen(ctx) },
   };
