@@ -3,7 +3,7 @@ import { STATUS } from './processing.js';
 import { UserError } from './errors.js';
 
 /**
- * @typedef {{id: string, url: string, title: string, source: string, why: string, note: string, tags: string[], status: string, thumb: string|null, createdAt: number, updatedAt: number, archivedAt: number|null}} Keep
+ * @typedef {{id: string, url: string, title: string, source: string, why: string, note: string, tags: string[], status: string, thumb: string|null, kind: string, text: string, summary: string, points: string[], meta: object, error: string, deletedAt: number|null, createdAt: number, updatedAt: number, archivedAt: number|null}} Keep
  */
 
 /**
@@ -26,6 +26,13 @@ export function createKeep(input, now = Date.now()) {
     tags: [...new Set((input.tags || []).map((t) => t.trim().toLowerCase()).filter(Boolean))],
     status: STATUS.SAVED,
     thumb: null,
+    kind: input.kind || 'link',
+    text: '',
+    summary: '',
+    points: [],
+    meta: {},
+    error: '',
+    deletedAt: null,
     createdAt: now,
     updatedAt: now,
     archivedAt: null,
