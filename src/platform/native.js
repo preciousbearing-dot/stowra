@@ -49,6 +49,11 @@ export const native = {
   },
   /** @param {string} path */
   async deleteShareFile(path) { if (N) { try { await N.deleteShareFile({ path }); } catch (e) { /* ignore */ } } },
+  /** Save text as a file the person can find: Downloads on the phone, a normal download in a browser. @returns {Promise<boolean>} */
+  async saveFile(name, text, mime = 'application/json') {
+    if (N) { try { const b64 = btoa(unescape(encodeURIComponent(text))); await N.saveToDownloads({ name, mime, base64: b64 }); return true; } catch (e) { return false; } }
+    try { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type: mime })); a.download = name; document.body.appendChild(a); a.click(); a.remove(); return true; } catch (e) { return false; }
+  },
   /** Match the status and navigation bars to the look. */
   async setBars(color, darkIcons) { if (N) { try { await N.setBars({ color, darkIcons }); } catch (e) { /* ignore */ } } },
   /** Give the share sheet the current look. */

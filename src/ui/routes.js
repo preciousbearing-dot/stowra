@@ -5,7 +5,9 @@ import { collectionsScreen, collectionScreen } from './screens/collections.js';
 import { kikoScreen } from './screens/kiko.js';
 import { creationsScreen, creationScreen } from './screens/creations.js';
 import { rediscoverScreen, reviewScreen, laptopScreen } from './screens/discover.js';
-import { settingsScreen, aiSettingsScreen } from './screens/settings.js';
+import { dataScreen, privacyScreen } from './screens/data.js';
+import { aboutScreen } from './screens/about.js';
+import { settingsScreen, aiSettingsScreen, lookSettingsScreen } from './screens/settings.js';
 
 /** Route table. A route with bare:true hides the bottom navigation. */
 export function buildRoutes(ctx) {
@@ -25,6 +27,10 @@ export function buildRoutes(ctx) {
     '/review': { tab: 'trove', bare: true, render: () => reviewScreen(ctx) },
     '/laptop': { tab: 'collections', bare: true, render: () => laptopScreen(ctx) },
     '/settings': { tab: 'settings', render: () => settingsScreen(ctx) },
+    '/settings/data': { tab: 'settings', bare: true, render: () => dataScreen(ctx) },
+    '/settings/privacy': { tab: 'settings', bare: true, render: () => privacyScreen(ctx) },
+    '/settings/about': { tab: 'settings', bare: true, render: () => aboutScreen(ctx) },
+    '/settings/look': { tab: 'settings', bare: true, render: () => lookSettingsScreen(ctx) },
     '/settings/ai': { tab: 'settings', bare: true, render: () => aiSettingsScreen(ctx) },
   };
 }

@@ -17,6 +17,9 @@ import { userMessage } from './core/errors.js';
 import { native } from './platform/native.js';
 import { openCapture } from './ui/screens/capture.js';
 import { buildRoutes } from './ui/routes.js';
+import { createLock } from './core/lock.js';
+import { showLock } from './ui/screens/lock.js';
+import { runUpdateCheck } from './ui/screens/about.js';
 
 /** Boot order: open storage, apply the saved look, show the splash for that look, then route. */
 async function boot() {
@@ -44,16 +47,20 @@ export async function startApp(root, repo, persistent) {
   const pipeline = createPipeline({ keeps, extractors: EXTRACTORS, tools });
   const view = h('div', { id: 'view' });
   const leave = [];
+  const lock = await createLock(repo).load();
   const creations = createCreationService(repo);
-  const ctx = { repo, keeps, creations, pipeline, ai, native, persistent, router: null, errorText: userMessage, onLeave: (f) => leave.push(f) };
+  const ctx = { repo, keeps, creations, lock, pipeline, ai, native, persistent, router: null, errorText: userMessage, onLeave: (f) => leave.push(f) };
+  window.__stowra = ctx;
   const nav = createNav({ go: (p) => ctx.router.go(p), onAdd: () => openCapture(ctx) });
   root.append(view, nav.el);
+  if (lock.enabled) await showLock(root, lock);
+  let hiddenAt = 0;
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') hiddenAt = Date.now(); else if (lock.enabled && hiddenAt && Date.now() - hiddenAt > lock.graceSeconds * 1000 && !root.querySelector('.lockscreen')) showLock(root, lock); });
   ctx.router = createRouter(view, buildRoutes(ctx), ({ tab, bare }) => {
     nav.el.style.display = bare ? 'none' : '';
     view.style.bottom = bare ? '0' : '68px';
     nav.set(tab);
   }, () => { while (leave.length) leave.pop()(); });
-  window.__stowra = ctx;
   await ctx.router.start();
   await keeps.sweepBin();
   const intake = async () => {
@@ -65,6 +72,12 @@ export async function startApp(root, repo, persistent) {
   pipeline.resume();
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { intake(); pipeline.resume(); } });
   window.addEventListener('online', () => pipeline.resume());
+  // Once a day, quietly look for an update and mention it once.
+  repo.prefs.read('lastUpdateCheck', { at: 0 }).then(async (c) => {
+    if (Date.now() - c.at < 86400000 || !navigator.onLine) return;
+    const r = await runUpdateCheck(ctx).catch(() => null);
+    if (r && r.status === 'available') toast(`Stowra ${r.latest} is ready`, { action: 'See', onAction: () => ctx.router.go('/settings/about') });
+  });
   if (!persistent) toast('Storage is unavailable here, so nothing will be saved.');
 }
 

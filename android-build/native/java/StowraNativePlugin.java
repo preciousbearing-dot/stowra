@@ -1,10 +1,14 @@
 package app.stowra.vault;
 
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.net.Uri;
+import android.os.Build;
+import android.os.Environment;
+import android.provider.MediaStore;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
 import android.util.Base64;
@@ -21,6 +25,8 @@ import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.OutputStream;
 import java.io.FileInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -165,5 +171,32 @@ public class StowraNativePlugin extends Plugin {
     public void secureDelete(PluginCall call) {
         prefs("stowra_secure").edit().remove(call.getString("key", "")).apply();
         call.resolve();
+    }
+
+    /** Saves a file (a backup) into the phone's Downloads folder. */
+    @PluginMethod
+    public void saveToDownloads(PluginCall call) {
+        try {
+            String name = call.getString("name", "stowra-backup.json").replaceAll("[^A-Za-z0-9._-]", "_");
+            String mime = call.getString("mime", "application/json");
+            byte[] data = Base64.decode(call.getString("base64", ""), Base64.DEFAULT);
+            Context c = getContext();
+            if (Build.VERSION.SDK_INT >= 29) {
+                ContentValues v = new ContentValues();
+                v.put(MediaStore.Downloads.DISPLAY_NAME, name);
+                v.put(MediaStore.Downloads.MIME_TYPE, mime);
+                v.put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS);
+                Uri u = c.getContentResolver().insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, v);
+                if (u == null) { call.reject("Could not create the file."); return; }
+                try (OutputStream o = c.getContentResolver().openOutputStream(u)) { o.write(data); }
+            } else {
+                File d = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+                d.mkdirs();
+                try (FileOutputStream o = new FileOutputStream(new File(d, name))) { o.write(data); }
+            }
+            JSObject o = new JSObject();
+            o.put("name", name);
+            call.resolve(o);
+        } catch (Throwable t) { call.reject("Could not save the file."); }
     }
 }
