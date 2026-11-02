@@ -42,7 +42,7 @@ export async function keepScreen(ctx, { id }) {
         h('button', { class: 'iconbtn', 'aria-label': 'Share', onClick: () => share(k) }, icon('share'))));
   }
 
-  const statusNote = (k) => ({ saved: 'Waiting to be read', processing: 'Reading now', ready: k.meta.how || '', partial: k.meta.how || 'Some parts could not be read', failed: '', attention: '' }[k.status] || '');
+  const statusNote = (k) => ({ saved: 'Waiting to be read', processing: 'Reading now', ready: k.meta.how || '', partial: k.meta.how || 'Some parts could not be read', failed: '', attention: k.meta.how || '' }[k.status] || '');
 
   function overview(k, noAI) {
     const out = [];
@@ -81,7 +81,7 @@ export async function keepScreen(ctx, { id }) {
   }
   function more(k) {
     menu('Keep', [
-      { label: 'Rename', icon: 'edit', run: async () => { const t = await promptBox('Rename', 'Title', k.title); if (t) { await keeps.update(id, { title: t }); draw(); } } },
+      { label: 'Rename', icon: 'edit', run: async () => { const t = await promptBox('Rename', 'Title', k.title); if (t) { await keeps.update(id, { title: t, meta: { ...k.meta, autoTitle: false } }); draw(); } } },
       { label: 'Replace picture', icon: 'image', run: () => pickThumb() },
       k.url ? { label: 'Copy link', icon: 'copy', run: async () => { try { await navigator.clipboard.writeText(k.url); toast('Link copied'); } catch (e) { toast('Could not copy'); } } } : null,
       { label: k.archivedAt ? 'Restore from archive' : 'Archive', icon: 'archive', run: async () => { k.archivedAt ? await keeps.unarchive(id) : await keeps.archive(id); toast(k.archivedAt ? 'Restored' : 'Archived'); router.go('/trove'); } },

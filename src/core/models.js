@@ -15,7 +15,7 @@ import { UserError } from './errors.js';
 export function createKeep(input, now = Date.now()) {
   const url = (input.url || '').trim();
   const note = (input.note || '').trim();
-  if (!url && !note) throw new UserError('Add a link or a note to keep.', { code: 'empty_keep' });
+  if (!url && !note && !input.hasFile) throw new UserError('Add a link or a note to keep.', { code: 'empty_keep' });
   return {
     id: newId('k', now),
     url,

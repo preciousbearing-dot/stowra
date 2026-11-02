@@ -28,7 +28,7 @@ export function createKeepService(repo) {
       const dup = (await repo.keeps.all()).find((k) => k.url && !k.deletedAt && normalizeUrl(k.url) === norm);
       if (dup) return { keep: dup, duplicate: true };
     }
-    const k = createKeep({ url, note, why: input.why || '', title: input.title || '', source: input.source || info.label, kind: info.kind });
+    const k = createKeep({ url, note, why: input.why || '', title: input.title || '', source: input.source || info.label, kind: info.kind, hasFile: Boolean(input.file) });
     if (!k.title) k.title = input.file?.name || (url ? info.host || url : note.split('\n')[0].slice(0, 80));
     if (input.file) { k.meta.file = { name: input.file.name || 'file', mime: input.file.mime, size: input.file.size || 0 }; await repo.chunks.put({ id: `file:${k.id}`, blob: input.file.blob }); }
     await repo.keeps.put(k);
