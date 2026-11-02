@@ -90,3 +90,17 @@ textarea.field { height: 96px; padding: 12px 16px; resize: none; }
 .keep-page { padding-bottom: 0; }
 .why-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 .lbl-strong { font-size: 14px; font-weight: 600; margin-top: 20px; }
+a.ext { color: var(--ac); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+.prov { display: flex; flex-direction: column; gap: 8px; padding: 16px 24px 0; }
+.pcard { text-align: left; border: 1px solid var(--ln); background: var(--tile); box-shadow: var(--tileSh); border-radius: 18px; padding: 14px 16px; color: var(--tx); display: flex; align-items: center; gap: 12px; width: 100%; }
+.pcard.on { border-color: var(--ac); }
+.pcard .grow { flex: 1; min-width: 0; } .pcard .nm { font-weight: 600; } .pcard .tg { font-size: 12px; color: var(--mu); }
+.pdot { width: 22px; height: 22px; border-radius: 11px; border: 2px solid var(--ln); display: grid; place-items: center; flex: none; color: var(--oa); }
+.pcard.ok .pdot { background: var(--ac); border-color: var(--ac); }
+.steps { margin: 12px 0 0; padding: 0; list-style: none; counter-reset: s; }
+.steps li { counter-increment: s; display: flex; gap: 14px; padding: 10px 0; font-size: 15px; line-height: 22px; color: var(--t2); }
+.steps li::before { content: counter(s); flex: none; width: 24px; height: 24px; border-radius: 12px; background: var(--track); color: var(--tx); font-size: 12px; font-weight: 700; display: grid; place-items: center; margin-top: 1px; }
+.status { margin-top: 12px; font-size: 14px; line-height: 20px; padding: 12px 14px; border-radius: 14px; background: var(--track); color: var(--tx); }
+.status.bad { color: #B3361B; } .status.good { color: var(--tx); }
+.keyrow { display: flex; gap: 8px; margin-top: 16px; } .keyrow .field { flex: 1; min-width: 0; }
+select.field { appearance: none; }

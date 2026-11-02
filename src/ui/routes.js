@@ -2,7 +2,7 @@ import { troveScreen } from './screens/trove.js';
 import { searchScreen } from './screens/search.js';
 import { keepScreen } from './screens/keep.js';
 import { collectionsScreen, collectionScreen } from './screens/collections.js';
-import { settingsScreen } from './screens/settings.js';
+import { settingsScreen, aiSettingsScreen } from './screens/settings.js';
 
 /** Route table. A route with bare:true hides the bottom navigation. */
 export function buildRoutes(ctx) {
@@ -13,5 +13,6 @@ export function buildRoutes(ctx) {
     '/collections': { tab: 'collections', render: () => collectionsScreen(ctx) },
     '/collection/:id': { tab: 'collections', bare: true, render: (p) => collectionScreen(ctx, p) },
     '/settings': { tab: 'settings', render: () => settingsScreen(ctx) },
+    '/settings/ai': { tab: 'settings', bare: true, render: () => aiSettingsScreen(ctx) },
   };
 }

@@ -37,7 +37,8 @@ async function boot() {
 export async function startApp(root, repo, persistent) {
   root.replaceChildren();
   const keeps = createKeepService(repo);
-  const ai = createAi({ repo });
+  const ai = createAi({ repo, keeps });
+  await ai.init();
   const tools = { ai, native, repo };
   const pipeline = createPipeline({ keeps, extractors: EXTRACTORS, tools });
   const view = h('div', { id: 'view' });
