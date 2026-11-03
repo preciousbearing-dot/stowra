@@ -29,7 +29,7 @@ export async function ask({ ai, keeps }, o) {
   const noTr = inScope.filter((k) => (k.kind === 'youtube' || k.kind === 'video') && k.meta && k.meta.hasTranscript === false).map((k) => `"${k.title}"`);
   const trNote = noTr.length ? `\n\nNote: no transcript was kept for ${noTr.join(', ')}. Only its title and the uploader description are available, so say that clearly.` : '';
   const history = (o.history || []).slice(-6);
-  const { text, provider, model } = await ai.chat({ json: true, max: 1400, signal: o.signal, system: `${RULES}\n\nScope: ${o.scope.type === 'trove' ? 'the whole Trove' : o.scope.type === 'collection' ? `the Collection "${o.scope.label}"` : 'the selected Keeps'}. Keeps in scope: ${inScope.length}.${trNote}`, messages: [...history, { role: 'user', content: `Passages from the user's Keeps:\n\n${ctx}\n\nQuestion: ${q}` }] });
+  const { text, provider, model } = await ai.chat({ json: true, max: 2400, signal: o.signal, system: `${RULES}\n\nScope: ${o.scope.type === 'trove' ? 'the whole Trove' : o.scope.type === 'collection' ? `the Collection "${o.scope.label}"` : 'the selected Keeps'}. Keeps in scope: ${inScope.length}.${trNote}`, messages: [...history, { role: 'user', content: `Passages from the user's Keeps:\n\n${ctx}\n\nQuestion: ${q}` }] });
   const v = verify(text, passages, inScope.map((k) => k.title));
   if (!passages.length) { v.parts = v.parts.map((p) => (p.source === 'keeps' ? { ...p, source: 'unsupported', cites: [] } : p)); v.noEvidence = true; }
   return { ...v, provider, model, sent: passages.length, scope: o.scope, inScope: inScope.length };

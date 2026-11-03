@@ -114,5 +114,25 @@ export function createAi({ repo, keeps, fetchImpl }) {
     await keeps.update(keepId, { summary: j.summary.trim(), points: (Array.isArray(j.points) ? j.points : []).map(String).slice(0, 8) });
   }
 
-  return { init, ready, connected, connect, disconnect, setActive, setModel, loadModels, chat, summarise, get config() { return cfg; }, providers: PROVIDERS, hasKey: (id) => Boolean(keys[id]) };
+  /**
+   * Turn the speech in a short video or recording into a timestamped transcript. Uses Groq Whisper, only on a clear tap, and sends the file to Groq.
+   * @param {Blob} blob @param {string} name @param {{signal?: AbortSignal}} [o]
+   */
+  async function transcribe(blob, name, o = {}) {
+    if (!connected().includes('groq')) throw new UserError('Reading speech in a video needs a free Groq key. Add it in You, then AI connection.', { code: 'no_groq' });
+    if (blob.size > 25 * 1024 * 1024) throw new UserError('This file is over 25 MB, which is the most Groq reads at once. Trim the recording or record a shorter one.', { code: 'too_big' });
+    const fd = new FormData(); fd.append('file', blob, name || 'video.mp4'); fd.append('model', 'whisper-large-v3-turbo'); fd.append('response_format', 'verbose_json'); fd.append('temperature', '0');
+    const r = await call('groq', '/audio/transcriptions', { method: 'POST', body: fd, signal: o.signal });
+    if (r.status === 401 || r.status === 403) throw new ProviderError('Key refused.', { code: 'key' });
+    if (!r.ok) throw new ProviderError(`Groq could not read the audio (HTTP ${r.status}).`, { code: String(r.status) });
+    const j = await r.json(); const segs = Array.isArray(j.segments) ? j.segments : [];
+    const stamp = (t) => `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
+    if (!segs.length) return String(j.text || '').trim() ? `[00:00] ${String(j.text).trim()}` : '';
+    const out = []; let cur = ''; let start = 0;
+    for (const sg of segs) { const t = String(sg.text || '').trim(); if (!t) continue; if (!cur || sg.start - start > 30) { if (cur) out.push(cur.trim()); start = sg.start || 0; cur = `[${stamp(start)}] `; } cur += t + ' '; }
+    if (cur.trim()) out.push(cur.trim());
+    return out.join('\n');
+  }
+
+  return { init, ready, connected, connect, disconnect, setActive, setModel, transcribe, loadModels, chat, summarise, get config() { return cfg; }, providers: PROVIDERS, hasKey: (id) => Boolean(keys[id]) };
 }

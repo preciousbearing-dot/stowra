@@ -61,7 +61,7 @@ export function nounFor(kind) {
 /** Filter chips on the Trove. */
 export const FILTERS = [
   { id: 'all', label: 'All' },
-  { id: 'video', label: 'Videos', kinds: ['youtube', 'tiktok', 'instagram', 'facebook'] },
+  { id: 'video', label: 'Videos', kinds: ['youtube', 'tiktok', 'instagram', 'facebook', 'video'] },
   { id: 'article', label: 'Articles', kinds: ['article', 'reddit', 'x', 'linkedin', 'link'] },
   { id: 'repo', label: 'Repos', kinds: ['github'] },
   { id: 'file', label: 'Files', kinds: ['pdf', 'image'] },

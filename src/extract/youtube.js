@@ -27,9 +27,10 @@ export function captionsToText(j) {
 
 const PLAYER = 'https://www.youtube.com/youtubei/v1/player?prettyPrint=false';
 const CLIENTS = [
-  { name: 'ANDROID', context: { client: { clientName: 'ANDROID', clientVersion: '20.10.38', androidSdkVersion: 30, hl: 'en' } }, ua: 'com.google.android.youtube/20.10.38 (Linux; U; Android 11) gzip' },
-  { name: 'WEB', context: { client: { clientName: 'WEB', clientVersion: '2.20250101.00.00', hl: 'en' } }, ua: '' },
+  { name: 'ANDROID', id: '3', body: { context: { client: { clientName: 'ANDROID', clientVersion: '20.10.38', androidSdkVersion: 34, hl: 'en' } } }, ua: 'com.google.android.youtube/20.10.38 (Linux; U; Android 14) gzip' },
+  { name: 'WEB', id: '1', body: { context: { client: { clientName: 'WEB', clientVersion: '2.20250101.00.00', hl: 'en' } } }, ua: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36' },
 ];
+const WEB_UA = CLIENTS[1].ua;
 
 /** Pick the best caption track: written English first, then automatic English, then the first one. @param {any[]} tracks */
 export function pickTrack(tracks) {
@@ -46,23 +47,29 @@ export function xmlToJson3(xml) {
   return { events };
 }
 
+/** Ask YouTube's player for the caption list, the same way the Knowvia app does. Says why when it cannot. */
 async function fromPlayer(id) {
+  let why = ''; let seen = null;
   for (const c of CLIENTS) {
     try {
-      const j = await getJson(PLAYER, { body: { context: c.context, videoId: id, contentCheckOk: true, racyCheckOk: true }, headers: c.ua ? { 'User-Agent': c.ua } : {}, timeout: 15000 });
-      const tracks = j && j.captions && j.captions.playerCaptionsTracklistRenderer && j.captions.playerCaptionsTracklistRenderer.captionTracks;
-      const d = j && j.videoDetails || {};
-      if (tracks && tracks.length) return { tracks, desc: d.shortDescription || '', title: d.title || '', author: d.author || '', secs: Number(d.lengthSeconds) || 0 };
-      if (d.title) return { tracks: [], desc: d.shortDescription || '', title: d.title, author: d.author || '', secs: Number(d.lengthSeconds) || 0 };
-    } catch (e) { /* try the next client */ }
+      const j = await getJson(PLAYER, { body: { ...c.body, videoId: id, contentCheckOk: true, racyCheckOk: true }, headers: { 'User-Agent': c.ua, 'X-YouTube-Client-Name': c.id }, timeout: 20000 });
+      const ps = (j && j.playabilityStatus) || {};
+      const d = (j && j.videoDetails) || {};
+      if (d.title) seen = { desc: d.shortDescription || '', title: d.title, author: d.author || '', secs: Number(d.lengthSeconds) || 0 };
+      if (ps.status && ps.status !== 'OK') { why = ps.status === 'LOGIN_REQUIRED' ? 'YouTube asks for a sign-in for this video (age limit or private).' : `YouTube would not give this video out: ${ps.reason || ps.status}.`; continue; }
+      const tracks = (((j.captions || {}).playerCaptionsTracklistRenderer || {}).captionTracks) || [];
+      if (!tracks.length) { why = 'This video has no captions, so there is no transcript.'; continue; }
+      return { tracks, ...(seen || {}), why: '' };
+    } catch (e) { why = `Could not reach YouTube (${(e && e.code) || 'network'}).`; }
   }
-  return null;
+  return { tracks: [], ...(seen || {}), why };
 }
 
 async function trackText(t) {
-  const base = String(t.baseUrl || ''); if (!base) return '';
-  try { const text = captionsToText(await getJson(`${base}${base.includes('?') ? '&' : '?'}fmt=json3`)); if (text) return text; } catch (e) { /* try xml */ }
-  try { return captionsToText(xmlToJson3(await getText(base))); } catch (e) { return ''; }
+  const base = String(t.baseUrl || '').replace(/&fmt=[^&]*/, ''); if (!base) return '';
+  const h = { 'User-Agent': WEB_UA };
+  try { const text = captionsToText(await getJson(`${base}&fmt=json3`, { headers: h })); if (text) return text; } catch (e) { /* try xml */ }
+  try { return captionsToText(xmlToJson3(await getText(base, { headers: h }))); } catch (e) { return ''; }
 }
 
 async function fromPage(id) {
@@ -81,14 +88,15 @@ export async function youtubeExtractor(k) {
   let title = ''; let author = ''; let desc = ''; let tr = ''; let ok = false; let lang = ''; let auto = false; let secs = 0; let thumbUrl = `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
   try { const o = await getJson(`https://www.youtube.com/oembed?url=${encodeURIComponent(`https://www.youtube.com/watch?v=${id}`)}&format=json`); title = o.title || ''; author = o.author_name || ''; thumbUrl = o.thumbnail_url || thumbUrl; ok = true; } catch (e) { /* the player may still work */ }
   let info = await fromPlayer(id);
+  let why = (info && info.why) || '';
   if (!info || !info.tracks.length) { try { const pg = await fromPage(id); info = { ...(info || {}), tracks: pg.tracks.length ? pg.tracks : (info && info.tracks) || [], desc: (info && info.desc) || pg.desc, title: (info && info.title) || pg.title }; } catch (e) { /* keep what we have */ } }
   if (info) {
     ok = true; title = title || info.title || ''; author = author || info.author || ''; desc = info.desc || ''; secs = info.secs || 0;
     const t = pickTrack(info.tracks);
-    if (t) { tr = await trackText(t); lang = t.languageCode || ''; auto = t.kind === 'asr'; }
+    if (t) { tr = await trackText(t); lang = t.languageCode || ''; auto = t.kind === 'asr'; if (!tr) why = 'YouTube gave the caption list but no caption text.'; else why = ''; }
   }
   if (!ok) { const e = new ExtractionError('Could not read YouTube.', { code: 'unreachable' }); throw e; }
   const thumb = await pictureAsThumb(thumbUrl);
   const text = [title, author && `Channel: ${author}`, desc && `Description:\n${desc}`, tr && `Transcript:\n${tr}`].filter(Boolean).join('\n\n');
-  return { title, thumb, text, status: tr ? 'ready' : 'partial', how: tr ? (auto ? 'Full transcript from automatic captions' : 'Full transcript from captions') : 'Title, picture and description. This video has no captions Stowra could read', meta: { author, hasTranscript: Boolean(tr), transcriptLang: lang, autoCaptions: auto, durationSecs: secs } };
+  return { title, thumb, text, status: tr ? 'ready' : 'partial', how: tr ? (auto ? 'Full transcript from automatic captions' : 'Full transcript from captions') : `Title, picture and description only. ${why || 'No transcript could be read.'}`, meta: { author, hasTranscript: Boolean(tr), transcriptLang: lang, autoCaptions: auto, durationSecs: secs, transcriptError: tr ? '' : (why || 'No transcript could be read.') } };
 }

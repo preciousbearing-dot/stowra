@@ -1,7 +1,7 @@
 /* Offline shell. Every app file must be listed in SHELL (tests check this). Bump CACHE when the list changes. */
-const CACHE = 'stowra-shell-9';
+const CACHE = 'stowra-shell-10';
 const SHELL = [
-  'src/core/stats.js', 'src/platform/back.js', 'src/ui/onboarding/tour.js', 'src/ui/onboarding/tour-art.js', 'src/ui/theme/tour.css', 'src/ui/screens/trove-charts.js', 'src/ui/screens/keep-extras.js', 'src/ai/study.js', 'src/ai/analyse.js',
+  'src/core/stats.js', 'src/platform/back.js', 'src/ui/onboarding/tour.js', 'src/ui/onboarding/tour-art.js', 'src/ui/theme/tour.css', 'src/ui/screens/trove-charts.js', 'src/ui/screens/keep-extras.js', 'src/ai/study.js', 'src/extract/video.js', 'src/ai/analyse.js',
   './', 'index.html', 'manifest.webmanifest',
   'assets/fonts/Manrope-Variable.ttf', 'assets/fonts/Newsreader-Variable.ttf',
   'src/main.js', 'version.js', 'src/platform/updater.js',
