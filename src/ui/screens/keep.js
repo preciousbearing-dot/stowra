@@ -7,6 +7,8 @@ import { WHY } from '../../capture/why.js';
 import { readImageFile } from '../../capture/images.js';
 import { relatedTo } from '../../core/discover.js';
 import { keepCard } from '../kit/cards.js';
+import { rich } from '../kit/rich.js';
+import { transcriptView, studyView, analysisCard } from './keep-extras.js';
 
 /** One Keep: cover, why, status, summary, key ideas, reading text, notes, tags, Collections. */
 export async function keepScreen(ctx, { id }) {
@@ -32,8 +34,8 @@ export async function keepScreen(ctx, { id }) {
         h('div', { class: 'cs', style: { marginTop: '16px', fontSize: '14px', gap: '8px' } }, statusDot(k), h('b', { text: STATUS_LABEL[k.status] }), h('span', { text: k.error || statusNote(k) }),
           ['saved', 'failed', 'attention', 'partial', 'ready'].includes(k.status) && k.url ? h('button', { class: 'chip', style: { marginLeft: 'auto', height: '36px' }, onClick: async () => { toast('Reading again'); await ctx.pipeline.run(id); }, text: k.status === 'ready' ? 'Read again' : 'Try again' }) : null),
         k.status === 'attention' || (k.kind === 'tiktok' || k.kind === 'instagram') ? h('div', { class: 'notice', style: { margin: '12px 0 0' }, text: `${k.source} shares no cover or caption. Paste the caption into Notes, or add a screen recording, and Stowra can read it.` }) : null,
-        h('div', { class: 'seg', style: { padding: '24px 0 0' } }, [['overview', 'Overview'], ['reading', 'Reading'], ['notes', 'Notes']].map(([t, l]) => h('button', { class: tab === t ? 'on' : '', text: l, onClick: () => { tab = t; draw(); } }))),
-        tab === 'overview' ? overview(k, noAI) : tab === 'reading' ? reading(k) : notes(k),
+        h('div', { class: 'seg', style: { padding: '24px 0 0' } }, [['overview', 'Overview'], ['reading', 'Reading'], ...(k.meta.hasTranscript ? [['transcript', 'Transcript'], ['study', 'Study']] : []), ['notes', 'Notes']].map(([t, l]) => h('button', { class: tab === t ? 'on' : '', text: l, onClick: () => { tab = t; draw(); } }))),
+        tab === 'overview' ? [analysisCard(k, ctx, (t) => { tab = t; draw(); }), overview(k, noAI)] : tab === 'reading' ? reading(k) : tab === 'transcript' ? transcriptView(k) : tab === 'study' ? studyView(k, ctx, draw) : notes(k),
         h('div', { style: { marginTop: '24px', display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' } },
           k.tags.map((t) => h('button', { class: 'chip', text: t, onClick: () => removeTag(k, t), 'aria-label': `Remove tag ${t}` })),
           h('button', { class: 'chip', onClick: () => addTag(k) }, icon('plus', 16), 'Tag'),
@@ -50,8 +52,8 @@ export async function keepScreen(ctx, { id }) {
 
   function overview(k, noAI) {
     const out = [];
-    if (k.summary) out.push(h('div', { style: { marginTop: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' } }, h('h2', { class: 'h2', text: 'Summary' }), h('span', { class: 'chip', style: { height: '28px', fontSize: '12px' }, text: 'From this Keep' })), h('p', { style: { margin: '12px 0 0', fontSize: '16px', lineHeight: '26px', color: 'var(--tx)' }, text: k.summary }));
-    if (k.points.length) out.push(h('h2', { class: 'h2', style: { margin: '28px 0 4px' }, text: 'Key ideas' }), ...k.points.map((p, i) => h('div', { style: { display: 'flex', gap: '14px', padding: '14px 0', borderBottom: '1px solid var(--ln)' } }, h('span', { class: 'lbl', style: { width: '20px', lineHeight: '24px' }, text: String(i + 1) }), h('span', { text: p }))));
+    if (k.summary) out.push(h('div', { style: { marginTop: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' } }, h('h2', { class: 'h2', text: 'Summary' }), h('span', { class: 'chip', style: { height: '28px', fontSize: '12px' }, text: 'From this Keep' })), h('p', { style: { margin: '12px 0 0', fontSize: '16px', lineHeight: '26px', color: 'var(--tx)', whiteSpace: 'pre-wrap' } }, ...rich(k.summary)));
+    if (k.points.length) out.push(h('h2', { class: 'h2', style: { margin: '28px 0 4px' }, text: 'Key ideas' }), ...k.points.map((p, i) => h('div', { style: { display: 'flex', gap: '14px', padding: '14px 0', borderBottom: '1px solid var(--ln)' } }, h('span', { class: 'lbl', style: { width: '20px', lineHeight: '24px' }, text: String(i + 1) }), h('span', {}, ...rich(p)))));
     if (!k.summary) {
       const readable = (k.text || k.note).length > 80;
       out.push(h('div', { class: 'notice', style: { margin: '24px 0 0' } }, h('div', { text: !readable ? 'There is not enough text yet to summarise. Add a note or let Stowra read the page.' : noAI ? 'Connect an AI provider in Settings to get a summary and key ideas. Everything else works without one.' : 'Ready to summarise. Only the text of this Keep is sent.' }),
@@ -60,7 +62,7 @@ export async function keepScreen(ctx, { id }) {
     }
     return h('div', {}, out);
   }
-  const reading = (k) => h('div', { style: { marginTop: '20px' } }, k.text ? h('p', { style: { whiteSpace: 'pre-wrap', fontSize: '17px', lineHeight: '28px', margin: 0 }, text: k.text.slice(0, 40000) }) : h('div', { class: 'notice', style: { margin: 0 }, text: 'Stowra has not read the text of this Keep yet.' }));
+  const reading = (k) => h('div', { style: { marginTop: '20px' } }, k.text ? h('p', { style: { whiteSpace: 'pre-wrap', fontSize: '17px', lineHeight: '28px', margin: 0 } }, ...rich(k.text.slice(0, 40000))) : h('div', { class: 'notice', style: { margin: 0 }, text: 'Stowra has not read the text of this Keep yet.' }));
   function notes(k) {
     const ta = h('textarea', { class: 'field', style: { height: '180px', marginTop: '20px' }, placeholder: 'Your notes, or paste the caption here', 'aria-label': 'Notes', value: k.note });
     let t; ta.addEventListener('input', () => { clearTimeout(t); t = setTimeout(() => keeps.update(id, { note: ta.value }), 500); });

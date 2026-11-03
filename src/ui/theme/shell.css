@@ -11,11 +11,22 @@
 .lbl { color: var(--mu); font-size: 12px; line-height: 16px; font-weight: 500; }
 .iconbtn { width: 44px; height: 44px; border-radius: 22px; border: 1px solid var(--ln); background: var(--tile); box-shadow: var(--tileSh); color: var(--tx); display: grid; place-items: center; flex: none; }
 .iconbtn.plain { border-color: transparent; background: transparent; box-shadow: none; }
-.nav { position: absolute; left: 0; right: 0; bottom: 0; height: 68px; background: var(--navBg); border-top: 1px solid var(--ln); display: flex; align-items: center; justify-content: space-around; padding: 0 8px; z-index: 5; }
-.tab { flex: 1; height: 56px; border: 0; background: transparent; color: var(--mu); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 11px; font-weight: 500; }
+.nav { position: absolute; left: 0; right: 0; bottom: 0; height: var(--navh); background: var(--navBg); border-top: 1px solid var(--ln); display: flex; align-items: flex-start; padding: 8px 8px 0; z-index: 5; }
+:root, [data-style="advanced"] { --navh: 84px; }
+[data-style="simple"] { --navh: 80px; }
+.tab { flex: 1; height: 56px; border: 0; background: transparent; color: var(--mu); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding-top: 2px; font-size: 12px; line-height: 16px; font-weight: 500; }
+.tab::after { content: ""; width: 4px; height: 4px; border-radius: 2px; background: transparent; display: none; }
+[data-style="simple"] .tab { gap: 2px; } [data-style="simple"] .tab::after { display: block; } [data-style="simple"] .tab[aria-current="page"]::after { background: var(--ac); }
 .tab[aria-current="page"] { color: var(--tx); }
 .tab[aria-current="page"] svg { color: var(--ac); }
-.fab { flex: none; width: 56px; height: 56px; border-radius: 28px; border: 0; background: var(--ac); color: var(--oa); display: grid; place-items: center; margin: 0 8px; box-shadow: 0 6px 16px rgba(0,0,0,.18); }
+/* Advanced: the Keep button sits raised in the middle of the bar. Simple: it floats at the bottom right, above the bar (as on the design canvas). */
+.fab { flex: none; width: 60px; height: 60px; border-radius: 30px; border: 4px solid var(--bg); background: var(--ac); color: var(--oa); display: grid; place-items: center; margin: -24px 8px 0; box-shadow: 0 8px 20px rgba(0,0,0,.25); }
+[data-style="simple"] .fab { position: absolute; right: 24px; bottom: calc(var(--navh) + 20px); margin: 0; width: 56px; height: 56px; border: 0; border-radius: 28px; box-shadow: 0 8px 24px rgba(0,0,0,.3); }
+.exit-hint { position: absolute; left: 24px; right: 24px; bottom: calc(var(--navh) + 16px); z-index: 60; min-height: 48px; border-radius: 24px; background: var(--tx); color: var(--bg); display: flex; flex-direction: column; justify-content: center; padding: 10px 20px 14px; font-size: 14px; font-weight: 600; opacity: 0; transform: translateY(10px); transition: opacity .2s, transform .2s; overflow: hidden; }
+.exit-hint.on { opacity: 1; transform: none; }
+.exit-hint i { position: absolute; left: 0; bottom: 0; height: 4px; width: 100%; background: var(--ac); transform-origin: left; animation: exitbar 3s linear forwards; }
+@keyframes exitbar { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+.tr.replay { z-index: 30; }
 .search { width: calc(100% - 48px); margin: 8px 24px 0; text-align: left; height: 48px; border-radius: 24px; border: 1px solid var(--ln); background: var(--tile); box-shadow: var(--tileSh); display: flex; align-items: center; gap: 10px; padding: 0 16px; color: var(--mu); font-size: 16px; }
 .search input { flex: 1; min-width: 0; border: 0; background: transparent; outline: 0; color: var(--tx); font: inherit; }
 .chips { display: flex; gap: 8px; overflow-x: auto; padding: 16px 24px 4px; scrollbar-width: none; }
@@ -147,3 +158,41 @@ button.notice { display: block; text-align: left; font-family: inherit; }
 .keys { display: grid; grid-template-columns: repeat(3, 72px); gap: 12px 24px; justify-content: center; margin: 16px 0; flex: 1; align-content: center; }
 .key { height: 64px; border-radius: 32px; border: 1px solid var(--ln); background: var(--tile); box-shadow: var(--tileSh); color: var(--tx); font-size: 24px; font-weight: 500; display: grid; place-items: center; } .key.ghost { background: transparent; border-color: transparent; box-shadow: none; font-size: 14px; }
 .prog { height: 6px; border-radius: 3px; background: var(--track); overflow: hidden; margin-top: 12px; } .prog > div { height: 100%; background: var(--ac); transition: width .3s; }
+/* Advanced home charts */
+.apanel { padding: 16px 24px 0; display: flex; flex-direction: column; gap: 12px; }
+[data-style="simple"] .apanel { display: none; }
+.ahero { padding: 18px 20px 14px; border-radius: 24px; background: var(--hero); border: 1px solid var(--heroLn); color: var(--heroTx); display: flex; flex-direction: column; gap: 8px; }
+.ahero .lbl { color: var(--heroMu); font-size: 13px; font-weight: 500; }
+.arow { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.ahero .big { font-family: var(--serif); font-size: 44px; line-height: 48px; letter-spacing: -0.02em; }
+.ahero .delta { color: var(--ac); font-size: 13px; font-weight: 600; }
+.bars { display: flex; align-items: flex-end; gap: 8px; height: 84px; margin-top: 6px; }
+.bcol { flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 6px; }
+.bcol .bar { display: block; width: 100%; border-radius: 6px; background: var(--heroMu); opacity: .5; min-height: 4px; animation: growbar .7s cubic-bezier(.2,.8,.2,1) both; transform-origin: bottom; }
+.bcol .bar.now { background: var(--ac); opacity: 1; }
+.bcol span { font-size: 11px; line-height: 14px; color: var(--heroMu); }
+@keyframes growbar { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+.arow2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.acard { border: 1px solid var(--ln); border-radius: 20px; background: var(--tile); box-shadow: var(--tileSh); padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; min-width: 0; color: var(--tx); text-align: left; }
+.ct2 { font-size: 14px; line-height: 20px; font-weight: 500; }
+.stack { display: flex; height: 10px; border-radius: 5px; overflow: hidden; gap: 2px; } .stack .seg { display: block; min-width: 6px; }
+.s0 { background: var(--ac); } .s1 { background: var(--tx); opacity: .75; } .s2 { background: var(--mu); } .s3 { background: var(--ln); }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 12px; line-height: 16px; color: var(--t2); } .legend span { display: inline-flex; align-items: center; gap: 4px; } .sw { width: 8px; height: 8px; border-radius: 4px; display: inline-block; }
+.ringw { position: relative; width: 64px; height: 64px; } .ringw svg { display: block; } .ringw b { position: absolute; inset: 0; display: grid; place-items: center; font-size: 14px; }
+.rtrack { stroke: var(--track); } .rval { stroke: var(--ac); }
+.acard.tile { gap: 4px; min-height: 84px; position: relative; } .acard.tile .tv { font-family: var(--serif); font-size: 18px; line-height: 24px; }
+.acard.tile svg { position: absolute; right: 12px; bottom: 14px; color: var(--mu); }
+.lbl2 { display: flex; align-items: center; gap: 6px; font-size: 12px; line-height: 16px; color: var(--mu); font-weight: 500; } .pip { width: 6px; height: 6px; border-radius: 3px; background: var(--ac); display: inline-block; }
+/* Simple home: soft coloured two-column cards */
+[data-style="simple"] .grid.masonry { grid-template-columns: 1fr 1fr; gap: 12px; padding: 12px 24px 0; }
+[data-style="simple"] .grid.masonry .card { flex-direction: column; border: 0; border-radius: 20px; background: var(--sf); padding: 0; box-shadow: none; }
+[data-style="simple"] .grid.masonry .card:nth-child(4n+1), [data-style="simple"] .grid.masonry .card:nth-child(4n+4) { background: var(--rs); }
+.sreview { display: none; } [data-style="simple"] .sreview { display: flex; }
+
+/* Links, transcript, lessons */
+.tx-line { margin: 0 0 12px; font-size: 16px; line-height: 26px; user-select: text; } .tx-time { font-size: 13px; font-weight: 600; color: var(--ac); margin-right: 4px; text-decoration: none; }
+.lesson { padding: 16px 0; border-bottom: 1px solid var(--ln); } .lt { margin: 4px 0 0; font-family: var(--serif); font-weight: 400; font-size: 20px; line-height: 26px; }
+.lp { margin: 6px 0 0; padding-left: 20px; } .lp li { margin: 4px 0; line-height: 24px; }
+[data-style="simple"] .grid.masonry .card .cover { width: 100%; aspect-ratio: 4 / 3; border-radius: 20px 20px 0 0; font-size: 14px; }
+[data-style="simple"] .grid.masonry .card .meta { padding: 12px 14px 14px; }
+[data-style="simple"] .grid.masonry .card:nth-child(even) .cover { aspect-ratio: 1; }

@@ -11,6 +11,8 @@ function plugin(name) {
 }
 const N = plugin('StowraNative');
 const U = plugin('StowraUpdate');
+// The official Capacitor App plugin: it gives us the Android back button and a clean exit. Without a listener Android closes the app.
+const A = plugin('App');
 
 const SEC_PREFIX = 'stowra.sec.';
 
@@ -62,6 +64,17 @@ export const native = {
   async openExternal(url) {
     if (N) { try { await N.openExternal({ url }); return; } catch (e) { /* fall back */ } }
     window.open(url, '_blank', 'noopener');
+  },
+  /** Listen for the Android back button or swipe. The callback runs every time; with no listener Android would close the app. */
+  async onBack(cb) {
+    if (!A) return false;
+    try { await A.addListener('backButton', () => cb()); return true; } catch (e) { return false; }
+  },
+  /** Close the app. In a browser there is nothing to close, so tests can see the request. */
+  async exitApp() {
+    globalThis.__stowraExits = (globalThis.__stowraExits || 0) + 1;
+    if (A) { try { await A.exitApp(); return true; } catch (e) { /* fall through */ } }
+    return false;
   },
   update: {
     available: Boolean(U),

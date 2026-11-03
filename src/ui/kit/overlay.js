@@ -1,5 +1,6 @@
 import { h, fill } from './dom.js';
 import { icon } from './icons.js';
+import { pushBack } from '../../platform/back.js';
 
 let layer;
 function root() { if (!layer || !layer.isConnected) { layer = h('div', { class: 'layer' }); document.getElementById('app').appendChild(layer); } return layer; }
@@ -17,10 +18,11 @@ export function sheet(o = {}) {
   root().appendChild(wrap);
   requestAnimationFrame(() => wrap.classList.add('on'));
   let closed = false;
+  const off = pushBack(() => { if (closed) return false; close(); return true; });
   const onKey = (e) => { if (e.key === 'Escape') close(); };
   document.addEventListener('keydown', onKey);
   function close() {
-    if (closed) return; closed = true;
+    if (closed) return; closed = true; off();
     document.removeEventListener('keydown', onKey);
     wrap.classList.remove('on');
     setTimeout(() => wrap.remove(), 220);

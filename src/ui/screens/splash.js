@@ -1,4 +1,8 @@
+import { pushBack, requestExit } from '../../platform/back.js';
+
 const WORD = 'Stowra';
+/** Extra time the finished splash stays up, so the line under the name can be read (asked for after the first phone test). */
+export const HOLD_EXTRA_MS = 3000;
 
 /** The amber drop, same artwork as the app icon. */
 const DROP = `<svg viewBox="0 0 72 88" aria-hidden="true">
@@ -33,11 +37,14 @@ export function showSplash(root, opts = {}) {
   });
   root.appendChild(el);
   const reduced = opts.reducedMotion ?? matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const hold = reduced ? 700 : Math.round(2700 * t);
+  const hold = reduced ? 700 : Math.round(2700 * t) + HOLD_EXTRA_MS;
+  const layer = () => { requestExit(); return true; };
+  layer.keepHint = true;
+  const off = pushBack(layer);
   return new Promise((resolve) => {
     setTimeout(() => {
       el.classList.add('out');
-      setTimeout(() => { el.remove(); resolve(); }, reduced ? 0 : Math.round(300 * t));
+      setTimeout(() => { el.remove(); off(); resolve(); }, reduced ? 0 : Math.round(300 * t));
     }, hold);
   });
 }

@@ -1,5 +1,6 @@
 import { h, fill } from '../kit/dom.js';
 import { icon } from '../kit/icons.js';
+import { pushBack, requestExit } from '../../platform/back.js';
 
 /** Full-screen PIN pad. Resolves when the right PIN is entered, or (setup mode) when a PIN is set. @param {HTMLElement} root @param {any} lock @param {{mode?: 'unlock'|'set'}} [o] */
 export function showLock(root, lock, o = {}) {
@@ -19,5 +20,9 @@ export function showLock(root, lock, o = {}) {
       h('div', { class: 'keys' }, ['1', '2', '3', '4', '5', '6', '7', '8', '9'].map(key), set ? h('button', { class: 'key ghost', text: 'Cancel', onClick: () => { el.remove(); resolve(false); } }) : h('span', {}), key('0'), h('button', { class: 'key ghost', 'aria-label': 'Delete', onClick: () => { pin = pin.slice(0, -1); draw(); } }, icon('back', 22))),
       h('button', { class: 'btn', style: { margin: '8px 24px 0', width: 'calc(100% - 48px)' }, text: set ? (first ? 'Confirm' : 'Next') : 'Unlock', onClick: submit }));
     draw();
+    // Back on the lock screen never reveals what is behind it: setup cancels, unlock offers to leave the app.
+    const layer = () => { if (!el.isConnected) { off(); return false; } if (set) { el.remove(); off(); resolve(false); return true; } requestExit(); return true; };
+    layer.keepHint = true;
+    const off = pushBack(layer);
   });
 }

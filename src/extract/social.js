@@ -1,18 +1,39 @@
-import { getJson, getText, htmlToDoc, pictureAsThumb } from './http.js';
+import { getJson, getText, htmlToDoc, pictureAsThumb, resolveUrl } from './http.js';
 import { articleExtractor } from './article.js';
 
 const NEEDS = (name) => `${name} shares no captions or video content with other apps. Paste the caption into Notes, or add a screen recording`;
 
-/** TikTok: caption and cover through the public lookup. The spoken words need a screen recording. */
-export async function tiktokExtractor(k) {
-  try {
-    const o = await getJson(`https://www.tiktok.com/oembed?url=${encodeURIComponent(k.url)}`);
-    const thumb = await pictureAsThumb(o.thumbnail_url);
-    return { title: (o.title || `TikTok by ${o.author_name || 'unknown'}`).slice(0, 120), thumb, text: [o.title, o.author_name && `By ${o.author_name}`].filter(Boolean).join('\n'), status: 'partial', how: 'Caption and cover. The spoken words need a screen recording or pasted text', meta: { author: o.author_name || '' } };
-  } catch (e) { return { status: 'attention', how: NEEDS('TikTok') }; }
+/** Pull what a TikTok page offers: caption, cover, author and, when present, spoken-word subtitles. Best effort. @param {string} html */
+export function tiktokFromHtml(html) {
+  const out = { title: '', author: '', thumb: '', subs: [] };
+  const m = html.match(/<script id="__UNIVERSAL_DATA_FOR_REHYDRATION__"[^>]*>([\s\S]*?)<\/script>/);
+  if (m) {
+    try {
+      const j = JSON.parse(m[1]); const d = j['__DEFAULT_SCOPE__'] && j['__DEFAULT_SCOPE__']['webapp.video-detail'] && j['__DEFAULT_SCOPE__']['webapp.video-detail'].itemInfo && j['__DEFAULT_SCOPE__']['webapp.video-detail'].itemInfo.itemStruct;
+      if (d) { out.title = d.desc || ''; out.author = (d.author && (d.author.nickname || d.author.uniqueId)) || ''; out.thumb = (d.video && (d.video.originCover || d.video.cover)) || ''; out.subs = ((d.video && d.video.subtitleInfos) || []).map((x) => ({ lang: x.LanguageCodeName || '', url: x.Url || '' })).filter((x) => x.url); }
+    } catch (e) { /* use the meta tags */ }
+  }
+  const og = (n) => { const x = html.match(new RegExp(`<meta[^>]+property="${n}"[^>]+content="([^"]*)"`, 'i')); return x ? x[1].replace(/&amp;/g, '&').replace(/&quot;/g, '"') : ''; };
+  out.title = out.title || og('og:title') || og('og:description'); out.thumb = out.thumb || og('og:image');
+  return out;
 }
 
-/** Instagram and Facebook: the link and source are kept. Meta gives no caption or cover without a developer token. */
+/** TikTok: caption and cover through the public lookup, then the page itself. The spoken words come from subtitles when the video has them, otherwise from a screen recording. */
+export async function tiktokExtractor(k) {
+  const url = await resolveUrl(k.url);
+  let title = ''; let author = ''; let thumbUrl = ''; let subs = [];
+  try { const o = await getJson(`https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`); title = o.title || ''; author = o.author_name || ''; thumbUrl = o.thumbnail_url || ''; } catch (e) { /* try the page */ }
+  try {
+    const p = tiktokFromHtml(await getText(url, { headers: { 'Accept-Language': 'en', 'User-Agent': 'Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Mobile Safari/537.36' } }));
+    title = title || p.title; author = author || p.author; thumbUrl = thumbUrl || p.thumb; subs = p.subs;
+  } catch (e) { /* keep the lookup result */ }
+  if (!title && !thumbUrl) return { status: 'attention', how: NEEDS('TikTok') };
+  let spoken = '';
+  for (const sub of subs.slice(0, 1)) { try { const t = await getText(sub.url); spoken = t.replace(/WEBVTT/g, '').replace(/^\d+$/gm, '').replace(/^[\d:.,]+ --> .*$/gm, '').replace(/\n{2,}/g, '\n').trim(); } catch (e) { /* skip */ } }
+  const thumb = await pictureAsThumb(thumbUrl);
+  return { title: (title || `TikTok by ${author || 'unknown'}`).slice(0, 120), thumb, text: [title, author && `By ${author}`, spoken && `Transcript:\n${spoken}`].filter(Boolean).join('\n\n'), status: spoken ? 'ready' : 'partial', how: spoken ? 'Caption, cover and subtitles' : 'Caption and cover. The spoken words need a screen recording or pasted text', meta: { author, hasTranscript: Boolean(spoken) } };
+}
+
 export const instagramExtractor = async () => ({ status: 'attention', how: NEEDS('Instagram') });
 export const facebookExtractor = async () => ({ status: 'attention', how: NEEDS('Facebook') });
 export const linkedinExtractor = async (k) => { try { return await articleExtractor(k); } catch (e) { return { status: 'attention', how: 'LinkedIn asks people to log in. Paste the text into Notes and Stowra can read it' }; } };
