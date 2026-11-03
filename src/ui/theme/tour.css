@@ -1,0 +1,137 @@
+/* Welcome tour. Colours come only from theme tokens, so it matches every look. Motion is the design canvas timeline (8s loop). */
+.tr { position: absolute; inset: 0; display: flex; flex-direction: column; background: var(--bg); color: var(--tx); overflow: hidden; padding: 0 24px calc(28px + env(safe-area-inset-bottom)); }
+.tr::before { content: ""; position: absolute; left: -60px; top: -120px; width: 420px; height: 420px; border-radius: 50%; background: radial-gradient(circle, rgba(233,165,63,.16), rgba(233,165,63,0) 70%); pointer-events: none; }
+.tr-top { position: relative; display: flex; align-items: center; justify-content: space-between; height: 44px; margin-top: 20px; flex: none; }
+.tr-brand { display: flex; align-items: center; gap: 8px; }
+.tr-brand-drop svg { width: 26px; height: 26px; display: block; }
+.tr-brand-name { font-family: var(--serif); font-size: 20px; line-height: 24px; }
+.tr-skip { height: 44px; padding: 0 8px; border: 0; background: transparent; color: var(--t2); font-size: 14px; font-weight: 500; }
+.tr-skip.off { visibility: hidden; }
+.tr-artwrap { position: relative; flex: 1 1 0; min-height: 0; }
+.tr-stage { position: absolute; left: 50%; top: 4px; width: 390px; height: 400px; margin-left: -195px; transform-origin: top center; transform: scale(var(--k, 1)); }
+.tr-copy { position: relative; flex: none; padding-top: 8px; }
+.tr-title { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 36px; line-height: 42px; letter-spacing: -0.02em; }
+.tr-body { margin: 12px 0 0; font-size: 16px; line-height: 26px; color: var(--t2); min-height: 78px; }
+.tr-foot { position: relative; flex: none; padding-top: 16px; }
+.tr-dots { display: flex; align-items: center; gap: 6px; margin-bottom: 18px; }
+.tr-dots span { height: 6px; width: 6px; border-radius: 3px; background: var(--track); transition: width .25s ease, background .25s ease; }
+.tr-dots span.on { width: 24px; background: var(--ac); }
+.tr-actions { display: flex; gap: 12px; }
+.tr-actions .btn { flex: 1; }
+.tr-back { flex: none !important; width: 56px; padding: 0; display: grid; place-items: center; background: transparent; border: 1px solid var(--ln); color: var(--tx); }
+.tr-tile { background: var(--tile); box-shadow: var(--tileSh); border: 1px solid var(--ln); box-sizing: border-box; }
+.an { animation-duration: 8s; animation-iteration-count: infinite; animation-fill-mode: both; animation-timing-function: cubic-bezier(.2,.7,.2,1); }
+.tr-stage.fade { animation: wrapK 8s linear infinite both; }
+@keyframes wrapK { 0% { opacity: 0; } 2%, 95% { opacity: 1; } 99%, 100% { opacity: 0; } }
+@keyframes i4{0%,4%{opacity:0;transform:translateY(14px)}13%{opacity:1;transform:none}92%{opacity:1;transform:none}97%,100%{opacity:0;transform:none}}
+.i4{animation-name:i4}
+@keyframes i16{0%,16%{opacity:0;transform:translateY(14px)}25%{opacity:1;transform:none}92%{opacity:1;transform:none}97%,100%{opacity:0;transform:none}}
+.i16{animation-name:i16}
+@keyframes i22{0%,22%{opacity:0;transform:translateY(14px)}31%{opacity:1;transform:none}92%{opacity:1;transform:none}97%,100%{opacity:0;transform:none}}
+.i22{animation-name:i22}
+@keyframes i28{0%,28%{opacity:0;transform:translateY(14px)}37%{opacity:1;transform:none}92%{opacity:1;transform:none}97%,100%{opacity:0;transform:none}}
+.i28{animation-name:i28}
+@keyframes i34{0%,34%{opacity:0;transform:translateY(14px)}43%{opacity:1;transform:none}92%{opacity:1;transform:none}97%,100%{opacity:0;transform:none}}
+.i34{animation-name:i34}
+@keyframes i40{0%,40%{opacity:0;transform:translateY(14px)}49%{opacity:1;transform:none}92%{opacity:1;transform:none}97%,100%{opacity:0;transform:none}}
+.i40{animation-name:i40}
+@keyframes i42{0%,42%{opacity:0;transform:translateY(14px)}51%{opacity:1;transform:none}92%{opacity:1;transform:none}97%,100%{opacity:0;transform:none}}
+.i42{animation-name:i42}
+@keyframes i46{0%,46%{opacity:0;transform:translateY(14px)}55%{opacity:1;transform:none}92%{opacity:1;transform:none}97%,100%{opacity:0;transform:none}}
+.i46{animation-name:i46}
+@keyframes i50{0%,50%{opacity:0;transform:translateY(14px)}59%{opacity:1;transform:none}92%{opacity:1;transform:none}97%,100%{opacity:0;transform:none}}
+.i50{animation-name:i50}
+@keyframes i52{0%,52%{opacity:0;transform:translateY(14px)}61%{opacity:1;transform:none}92%{opacity:1;transform:none}97%,100%{opacity:0;transform:none}}
+.i52{animation-name:i52}
+@keyframes i58{0%,58%{opacity:0;transform:translateY(14px)}67%{opacity:1;transform:none}92%{opacity:1;transform:none}97%,100%{opacity:0;transform:none}}
+.i58{animation-name:i58}
+@keyframes i64{0%,64%{opacity:0;transform:translateY(14px)}73%{opacity:1;transform:none}92%{opacity:1;transform:none}97%,100%{opacity:0;transform:none}}
+.i64{animation-name:i64}
+
+/* slide 1: share */
+.tr-card { position: absolute; left: 50%; margin-left: -140px; top: 8px; width: 280px; height: 104px; border-radius: 24px; overflow: hidden; background: var(--hero); border: 1px solid var(--heroLn); color: var(--heroTx); }
+.tr-ring { position: absolute; right: -40px; top: -40px; width: 140px; height: 140px; border-radius: 70px; border: 1px solid var(--heroTx); opacity: .12; }
+.tr-play { position: absolute; left: 16px; top: 16px; width: 44px; height: 44px; border-radius: 22px; background: rgba(255,255,255,.14); display: grid; place-items: center; }
+.tr-play svg { width: 20px; height: 20px; }
+.tr-l1, .tr-l2 { position: absolute; left: 72px; height: 8px; border-radius: 4px; background: rgba(255,255,255,.5); }
+.tr-l1 { top: 20px; width: 120px; } .tr-l2 { top: 38px; width: 80px; background: rgba(255,255,255,.25); }
+.tr-src { position: absolute; left: 16px; bottom: 12px; font-size: 12px; font-weight: 500; color: #F7F6F3; }
+.tr-share { position: absolute; right: 12px; bottom: 10px; height: 32px; border-radius: 16px; padding: 0 12px; display: flex; align-items: center; gap: 8px; background: #F7F6F3; color: #151412; font-size: 12px; font-weight: 600; }
+.tr-share svg { width: 14px; height: 14px; }
+.tr-pillrow { position: absolute; left: 0; right: 0; top: 128px; display: flex; justify-content: center; }
+.tr-pill { height: 36px; border-radius: 20px; padding: 0 14px 0 8px; display: flex; align-items: center; gap: 8px; background: var(--tile); box-shadow: var(--tileSh); border: 1px solid var(--ln); font-size: 14px; font-weight: 500; }
+.tr-pill svg { width: 22px; height: 22px; }
+.tr-jar { position: absolute; left: 50%; margin-left: -80px; top: 176px; }
+.tr-jar svg { overflow: visible; display: block; }
+.tr-glass { fill: var(--track); stroke: var(--t2); }
+.tr-stowedrow { position: absolute; left: 0; right: 0; top: 360px; display: flex; justify-content: center; }
+.tr-stowed { height: 32px; border-radius: 16px; padding: 0 14px; display: flex; align-items: center; background: var(--track); font-size: 12px; font-weight: 600; color: var(--ac); }
+.t-fill { animation-name: tFill; transform-box: fill-box; transform-origin: 50% 100%; }
+.t-rip { animation-name: tRip; transform-box: fill-box; transform-origin: 50% 50%; }
+.t-drop { animation-name: tDrop; animation-timing-function: cubic-bezier(.55,0,.9,.5); transform-box: fill-box; }
+.t-lid { animation-name: tLid; transform-box: fill-box; }
+.t-seal { animation-name: tSeal; transform-box: fill-box; transform-origin: 50% 50%; }
+@keyframes tDrop { 0%, 36% { transform: translateY(-34px); opacity: 0; } 38% { opacity: 1; } 46% { transform: translateY(100px); opacity: 1; } 47.5% { transform: translateY(104px) scale(1.08,.82); } 49%, 100% { transform: translateY(104px); opacity: 0; } }
+@keyframes tRip { 0%, 47% { transform: scale(.3); opacity: 0; } 49% { opacity: .8; } 56%, 100% { transform: scale(2.8); opacity: 0; } }
+@keyframes tFill { 0%, 47% { transform: scaleY(0); } 58%, 100% { transform: scaleY(1); } }
+@keyframes tLid { 0%, 58% { transform: translateY(-44px); opacity: 0; } 61% { opacity: 1; } 68%, 100% { transform: translateY(0); opacity: 1; } }
+@keyframes tSeal { 0%, 66% { transform: scale(1.6); opacity: 0; } 72%, 100% { transform: scale(1); opacity: 1; } }
+/* slide 2: search */
+.tr-pad { position: absolute; inset: 0; padding: 0 0; }
+.tr-searchbar { height: 56px; display: flex; align-items: center; gap: 12px; padding: 0 16px; border-radius: 28px; color: var(--t2); }
+.t-type { display: inline-block; overflow: hidden; white-space: nowrap; font-size: 16px; line-height: 24px; color: var(--tx); border-right: 2px solid var(--ac); animation-name: tType; animation-timing-function: steps(22, end); }
+@keyframes tType { 0%, 10% { width: 0; } 30%, 100% { width: 196px; } }
+.tr-count { margin: 20px 8px 8px; font-size: 12px; line-height: 16px; color: var(--mu); font-weight: 500; }
+.tr-res { display: flex; align-items: center; gap: 12px; padding: 12px; margin-bottom: 8px; border-radius: 20px; }
+.tr-res.on { border-color: var(--ac); }
+.tr-th { flex: none; width: 52px; height: 64px; border-radius: 12px; }
+.c1 { background: #24403F; } .c2 { background: #3A4553; } .c3 { background: #5A3F2B; }
+.tr-rt { flex: 1; min-width: 0; }
+.tr-rn { font-size: 16px; line-height: 22px; font-weight: 500; }
+.tr-rs { font-size: 12px; line-height: 16px; color: var(--mu); }
+.tr-hit { margin-top: 6px; font-size: 12px; line-height: 16px; color: var(--ac); font-weight: 600; }
+/* slide 3: Kiko */
+.tr-bubble-me { margin-left: 56px; padding: 14px 16px; border-radius: 20px 20px 6px 20px; background: var(--hero); color: var(--heroTx); font-size: 16px; line-height: 24px; }
+.tr-kikorow { margin-top: 16px; display: flex; gap: 10px; align-items: flex-start; }
+.tr-kavatar { flex: none; width: 32px; height: 32px; border-radius: 16px; background: radial-gradient(circle at 35% 30%, #FFC85A, #C97A1A); display: grid; place-items: center; }
+.tr-kavatar span { width: 8px; height: 8px; border-radius: 4px; background: #FBF1D9; }
+.tr-kbody { flex: 1; min-width: 0; position: relative; }
+.tr-dots { position: absolute; left: 0; top: 0; height: 44px; padding: 0 16px; display: flex; align-items: center; gap: 6px; border-radius: 20px 20px 20px 6px; }
+.tr-dots span { width: 6px; height: 6px; border-radius: 3px; background: var(--mu); }
+.t-dotsbox { animation-name: tDots !important; }
+@keyframes tDots { 0%, 19% { opacity: 0; } 22% { opacity: 1; } 34% { opacity: 1; } 38%, 100% { opacity: 0; } }
+.t-dot { animation-name: tDot; animation-duration: .9s !important; animation-timing-function: ease-in-out; }
+.d2 { animation-delay: .15s; } .d3 { animation-delay: .3s; }
+@keyframes tDot { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+.tr-bubble-k { padding: 14px 16px; border-radius: 20px 20px 20px 6px; font-size: 16px; line-height: 24px; }
+.tr-source { margin: 16px 0 0 42px; display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 20px; color: var(--ac); }
+.tr-source.on { border-color: var(--ac); }
+.tr-stxt { flex: 1; min-width: 0; color: var(--tx); }
+.tr-sn { font-size: 14px; line-height: 20px; font-weight: 600; } .tr-ss { font-size: 12px; line-height: 16px; color: var(--mu); }
+.tr-note { margin-top: 20px; text-align: center; font-size: 12px; line-height: 16px; color: var(--mu); font-weight: 500; }
+.tr-note.low { margin-top: 14px; }
+/* slide 4: Creation */
+.tr-herorow { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 20px; background: var(--hero); border: 1px solid var(--heroLn); color: var(--heroTx); }
+.tr-hth { flex: none; width: 44px; height: 56px; border-radius: 10px; background: #3A4553; }
+.tr-htx { flex: 1; min-width: 0; } .tr-hl { font-size: 12px; line-height: 16px; opacity: .7; font-weight: 500; } .tr-hv { font-size: 16px; line-height: 22px; font-weight: 500; }
+.tr-arrow { display: flex; justify-content: center; height: 36px; align-items: center; color: var(--ac); }
+.tr-creation { padding: 16px 18px 6px; border-radius: 20px; }
+.tr-chead { display: flex; align-items: center; justify-content: space-between; }
+.tr-ctitle { font-family: var(--serif); font-size: 22px; line-height: 28px; }
+.tr-badge { height: 24px; border-radius: 12px; padding: 0 10px; display: flex; align-items: center; background: var(--track); font-size: 12px; font-weight: 600; color: var(--ac); }
+.tr-item { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--ln); font-size: 16px; line-height: 24px; }
+.tr-item.last { border-bottom: 0; }
+.tr-box { position: relative; flex: none; width: 24px; height: 24px; border-radius: 12px; border: 1.5px solid var(--mu); display: grid; place-items: center; color: var(--ac); }
+.tr-box svg { width: 14px; height: 14px; stroke: var(--ac); }
+.ck { stroke-dasharray: 24; animation-timing-function: ease-out; }
+.ck.k34 { animation-name: tCk34; } .ck.k42 { animation-name: tCk42; } .ck.k50 { animation-name: tCk50; }
+@keyframes tCk34 { 0%, 44% { stroke-dashoffset: 24; } 50%, 100% { stroke-dashoffset: 0; } }
+@keyframes tCk42 { 0%, 52% { stroke-dashoffset: 24; } 58%, 100% { stroke-dashoffset: 0; } }
+@keyframes tCk50 { 0%, 60% { stroke-dashoffset: 24; } 66%, 100% { stroke-dashoffset: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .an, .tr-stage.fade { animation: none !important; opacity: 1 !important; transform: none !important; }
+  .t-type { width: 196px !important; border-right: 0 !important; }
+  .t-dotsbox, .t-drop, .t-rip { display: none; }
+  .t-fill { transform: scaleY(1) !important; }
+  .ck { stroke-dashoffset: 0 !important; }
+}

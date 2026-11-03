@@ -3,6 +3,7 @@ import { icon } from '../kit/icons.js';
 import { aiSetup } from './ai-setup.js';
 import { lookPicker } from './look.js';
 import { PROVIDERS } from '../../ai/providers.js';
+import { replayTour } from '../onboarding/flow.js';
 
 /** Settings home. */
 export function settingsScreen(ctx) {
@@ -14,7 +15,8 @@ export function settingsScreen(ctx) {
       row('sun', 'Appearance', 'Style, theme and mode', '/settings/look'),
       row('lock', 'Privacy lock', ctx.lock.enabled ? 'PIN is on' : 'Off', '/settings/privacy'),
       row('download', 'Backup and restore', 'Save your Trove as a file', '/settings/data'),
-      row('refresh', 'About and updates', 'Version, update check', '/settings/about')));
+      row('refresh', 'About and updates', 'Version, update check', '/settings/about'),
+      h('button', { class: 'row', onClick: () => replayTour(document.getElementById('app')) }, icon('play', 22), h('div', { class: 'grow' }, h('div', { text: 'Replay the welcome tour' }), h('div', { class: 'rs', text: 'See the four intro slides again' })), icon('chevron', 18))));
 }
 
 export function aiSettingsScreen(ctx) {

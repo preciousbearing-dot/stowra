@@ -3,6 +3,10 @@ import { icon } from '../kit/icons.js';
 import { menu, sheet, toast } from '../kit/overlay.js';
 import { ask, keepsInScope, scopeLabel, CREATION_TYPES } from '../../kiko/kiko.js';
 import { PROVIDERS } from '../../ai/providers.js';
+import { rich } from '../kit/rich.js';
+
+/** One chip per Keep and place. */
+const uniqueCites = (cs) => { const seen = new Set(); return cs.filter((c) => { const key = c.keepId + '|' + (c.loc || ''); if (seen.has(key)) return false; seen.add(key); return true; }); };
 
 const SUGGEST = {
   keep: ['Summarise this', 'What should I do with this?', 'List the key steps'],
@@ -55,9 +59,9 @@ export async function kikoScreen(ctx, initial) {
     if (m.role === 'error') return h('div', { class: 'msg kiko-msg err', text: m.text });
     return h('div', { class: 'msg kiko-msg' },
       m.noEvidence ? h('div', { class: 'notice', style: { margin: '0 0 12px' }, text: 'Nothing in this scope matched the question.' }) : m.insufficient ? h('div', { class: 'notice', style: { margin: '0 0 12px' }, text: 'Your Keeps here do not fully cover this.' }) : null,
-      m.parts.map((p) => h('div', { class: 'part' }, h('span', { class: 'tag ' + p.source, text: LABEL[p.source] }), h('p', { text: p.text }),
+      m.parts.map((p) => h('div', { class: 'part' }, h('span', { class: 'tag ' + p.source, text: LABEL[p.source] }), h('p', { style: { whiteSpace: 'pre-wrap' } }, ...rich(p.text)),
         p.flagged ? h('div', { class: 'warn', text: 'Check this against the Keep. A quote could not be matched.' }) : null,
-        p.cites.length ? h('div', { class: 'cites' }, p.cites.map((c) => h('button', { class: 'chip cite' + (c.verified ? '' : ' un'), onClick: () => router.go(`/keep/${c.keepId}`) }, icon(c.verified ? 'link' : 'warn', 14), `${c.title.slice(0, 28)}${c.loc ? `, ${c.loc}` : ''}`))) : null)),
+        p.cites.length ? h('div', { class: 'cites' }, uniqueCites(p.cites).map((c) => h('button', { class: 'chip cite' + (c.verified ? '' : ' un'), onClick: () => router.go(`/keep/${c.keepId}`) }, icon(c.verified ? 'link' : 'warn', 14), `${c.title.slice(0, 28)}${c.loc ? `, ${c.loc}` : ''}`))) : null)),
       h('div', { class: 'lbl', style: { marginTop: '8px' }, text: `Sent ${m.sent} ${m.sent === 1 ? 'passage' : 'passages'} to ${PROVIDERS[m.provider]?.name || m.provider}` }),
       h('div', { class: 'row-btns', style: { marginTop: '8px' } }, h('button', { class: 'chip', onClick: () => saveAs(m) }, icon('download', 16), 'Save as Creation'), h('button', { class: 'chip', onClick: async () => { try { await navigator.clipboard.writeText(m.parts.map((p) => p.text).join('\n\n')); toast('Copied'); } catch (e) { toast('Could not copy'); } } }, icon('copy', 16), 'Copy')));
   }
@@ -81,5 +85,6 @@ export async function kikoScreen(ctx, initial) {
     menu('Model', [...on.map((id) => ({ label: `${PROVIDERS[id].name}, ${ai.config.providers[id].model}${ai.config.active === id ? ' (in use)' : ''}`, icon: ai.config.active === id ? 'check' : 'spark', run: async () => { await ai.setActive(id); toast(`Using ${PROVIDERS[id].name}`); } })), { label: 'Connections and keys', icon: 'key', run: () => router.go('/settings/ai') }]);
   }
   await draw();
+  if (ctx.kikoPreset && ai.ready()) { const q = ctx.kikoPreset; ctx.kikoPreset = ''; send(q); }
   return el;
 }

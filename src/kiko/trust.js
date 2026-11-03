@@ -8,7 +8,8 @@ Rules you must follow:
 4. A part with source "keeps" must cite at least one passage, and each quote must be copied exactly from that passage, 200 characters or fewer.
 5. Anything from your own general knowledge goes in a separate part with source "general" and no cites.
 6. If the passages do not contain enough to answer, set "insufficient" to true and say plainly what is missing. Do not guess.
-7. Plain, direct language. No dashes as punctuation. No emoji.`;
+7. A passage marked (uploader description) is text the uploader wrote about a video or page. It is NOT what was said in it. Never present it as the content of the video. When only a description exists for a video, say plainly that no transcript was kept and that the answer comes from the description only.
+8. Plain, direct language. No dashes as punctuation. No emoji.`;
 
 const norm = (s) => String(s || '').toLowerCase().replace(/[\u2018\u2019]/g, "'").replace(/[\u201c\u201d]/g, '"').replace(/\s+/g, ' ').trim();
 

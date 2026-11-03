@@ -3,10 +3,12 @@ import { readImageFile } from '../capture/images.js';
 
 async function req(url, o = {}) {
   const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), o.timeout || 20000);
-  try { return await fetch(url, { headers: o.headers || {}, signal: ctl.signal, redirect: 'follow' }); }
+  try { const init = { headers: o.headers || {}, signal: ctl.signal, redirect: 'follow' }; if (o.body !== undefined) { init.method = o.method || 'POST'; init.body = typeof o.body === 'string' ? o.body : JSON.stringify(o.body); init.headers = { 'Content-Type': 'application/json', ...init.headers }; } return await fetch(url, init); }
   catch (e) { throw new NetworkError('Could not reach the site.', { code: e && e.name === 'AbortError' ? 'timeout' : 'network', cause: e }); }
   finally { clearTimeout(t); }
 }
+/** Follow redirects (short links) and return the final address. Never throws. @param {string} url */
+export async function resolveUrl(url) { try { const r = await req(url, { timeout: 10000 }); return r.url || url; } catch (e) { return url; } }
 /** @returns {Promise<string>} */
 export async function getText(url, o) { const r = await req(url, o); if (!r.ok) throw new ExtractionError(`HTTP ${r.status}`, { code: `http_${r.status}` }); return r.text(); }
 export async function getJson(url, o) { const r = await req(url, o); if (!r.ok) throw new ExtractionError(`HTTP ${r.status}`, { code: `http_${r.status}` }); return r.json(); }

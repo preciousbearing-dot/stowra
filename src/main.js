@@ -20,9 +20,11 @@ import { buildRoutes } from './ui/routes.js';
 import { createLock } from './core/lock.js';
 import { showLock } from './ui/screens/lock.js';
 import { runUpdateCheck } from './ui/screens/about.js';
+import { initBack, setRouter } from './platform/back.js';
 
 /** Boot order: open storage, apply the saved look, show the splash for that look, then route. */
 async function boot() {
+  initBack();
   const root = document.getElementById('app');
   const { repo, persistent } = await openRepository();
   const prefs = { ...DEFAULT_PREFS, ...(await repo.prefs.read('prefs', {})) };
@@ -58,9 +60,10 @@ export async function startApp(root, repo, persistent) {
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') hiddenAt = Date.now(); else if (lock.enabled && hiddenAt && Date.now() - hiddenAt > lock.graceSeconds * 1000 && !root.querySelector('.lockscreen')) showLock(root, lock); });
   ctx.router = createRouter(view, buildRoutes(ctx), ({ tab, bare }) => {
     nav.el.style.display = bare ? 'none' : '';
-    view.style.bottom = bare ? '0' : '68px';
+    view.style.setProperty('bottom', bare ? '0' : 'var(--navh)');
     nav.set(tab);
   }, () => { while (leave.length) leave.pop()(); });
+  setRouter(ctx.router);
   await ctx.router.start();
   await keeps.sweepBin();
   const intake = async () => {

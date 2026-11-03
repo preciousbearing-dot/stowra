@@ -1,10 +1,12 @@
 {
-  "version": "0.2.0",
+  "version": "0.3.0",
   "min": "0.0.0",
   "notes": [
-    "The full first version of Stowra: share anything to it from other apps, keep it in your Trove, and find it again.",
-    "Stowra reads YouTube videos, articles, GitHub repos and PDFs, and keeps a picture of each.",
-    "Connect your own AI key to get summaries, and ask Kiko questions about your Keeps.",
-    "Collections, Creations, a weekly look back, a laptop queue for tools to try, backup, and a PIN lock."
+    "The Back button now goes to the screen before. On the last screen, press Back twice within three seconds to leave.",
+    "A new welcome tour with animated slides, a Back button, and a Replay option in You.",
+    "YouTube videos now keep the full transcript. Use the Transcript tab to read it, and Study to turn a teaching video into lessons.",
+    "Kiko no longer treats a video description as what was said, and shows each source only once.",
+    "Links inside Keeps and Kiko answers can be tapped. The Advanced home shows charts, and the Simple home puts the Keep button at the bottom right.",
+    "Stowra reads each new Keep to say what it is and offer the next step. TikTok links now try harder to find a caption and cover."
   ]
 }

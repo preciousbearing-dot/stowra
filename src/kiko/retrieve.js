@@ -22,5 +22,5 @@ export function retrieve(keeps, query, o = {}) {
   scored.sort((a, b) => b.s - a.s);
   const out = []; let used = 0;
   for (const { p } of scored) { if (out.length >= max || used + p.text.length > budget) continue; used += p.text.length; out.push(p); }
-  return out.map((p, i) => ({ id: i + 1, keepId: p.keepId, title: p.title, loc: p.loc, text: p.text }));
+  return out.map((p, i) => ({ id: i + 1, keepId: p.keepId, title: p.title, loc: p.loc, kind: p.kind || '', text: p.text }));
 }
