@@ -8,7 +8,7 @@ import { readImageFile } from '../../capture/images.js';
 import { relatedTo } from '../../core/discover.js';
 import { keepCard } from '../kit/cards.js';
 import { rich } from '../kit/rich.js';
-import { transcriptView, studyView, analysisCard } from './keep-extras.js';
+import { transcriptView, noTranscriptView, studyView, analysisCard } from './keep-extras.js';
 
 /** One Keep: cover, why, status, summary, key ideas, reading text, notes, tags, Collections. */
 export async function keepScreen(ctx, { id }) {
@@ -34,8 +34,8 @@ export async function keepScreen(ctx, { id }) {
         h('div', { class: 'cs', style: { marginTop: '16px', fontSize: '14px', gap: '8px' } }, statusDot(k), h('b', { text: STATUS_LABEL[k.status] }), h('span', { text: k.error || statusNote(k) }),
           ['saved', 'failed', 'attention', 'partial', 'ready'].includes(k.status) && k.url ? h('button', { class: 'chip', style: { marginLeft: 'auto', height: '36px' }, onClick: async () => { toast('Reading again'); await ctx.pipeline.run(id); }, text: k.status === 'ready' ? 'Read again' : 'Try again' }) : null),
         k.status === 'attention' || (k.kind === 'tiktok' || k.kind === 'instagram') ? h('div', { class: 'notice', style: { margin: '12px 0 0' }, text: `${k.source} shares no cover or caption. Paste the caption into Notes, or add a screen recording, and Stowra can read it.` }) : null,
-        h('div', { class: 'seg', style: { padding: '24px 0 0' } }, [['overview', 'Overview'], ['reading', 'Reading'], ...(k.meta.hasTranscript ? [['transcript', 'Transcript'], ['study', 'Study']] : []), ['notes', 'Notes']].map(([t, l]) => h('button', { class: tab === t ? 'on' : '', text: l, onClick: () => { tab = t; draw(); } }))),
-        tab === 'overview' ? [analysisCard(k, ctx, (t) => { tab = t; draw(); }), overview(k, noAI)] : tab === 'reading' ? reading(k) : tab === 'transcript' ? transcriptView(k) : tab === 'study' ? studyView(k, ctx, draw) : notes(k),
+        h('div', { class: 'seg', style: { padding: '24px 0 0' } }, [['overview', 'Overview'], ['reading', 'Reading'], ...(k.meta.hasTranscript || k.kind === 'youtube' || k.kind === 'video' ? [['transcript', 'Transcript'], ['study', 'Study']] : []), ['notes', 'Notes']].map(([t, l]) => h('button', { class: tab === t ? 'on' : '', text: l, onClick: () => { tab = t; draw(); } }))),
+        tab === 'overview' ? [analysisCard(k, ctx, (t) => { tab = t; draw(); }), overview(k, noAI)] : tab === 'reading' ? reading(k) : tab === 'transcript' ? (k.meta.hasTranscript ? transcriptView(k) : noTranscriptView(k, ctx, draw)) : tab === 'study' ? studyView(k, ctx, draw) : notes(k),
         h('div', { style: { marginTop: '24px', display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' } },
           k.tags.map((t) => h('button', { class: 'chip', text: t, onClick: () => removeTag(k, t), 'aria-label': `Remove tag ${t}` })),
           h('button', { class: 'chip', onClick: () => addTag(k) }, icon('plus', 16), 'Tag'),
@@ -71,7 +71,10 @@ export async function keepScreen(ctx, { id }) {
 
   function whySheet(k) {
     const s = sheet({ title: 'Why did you save this?' });
-    fill(s.body, h('div', { style: { display: 'flex', flexWrap: 'wrap', gap: '8px' } }, WHY.map((w) => h('button', { class: 'chip' + (k.why === w ? ' on' : ''), text: w, onClick: async () => { await keeps.update(id, { why: k.why === w ? '' : w }); s.close(); draw(); } }))));
+    const own = h('input', { class: 'field', placeholder: 'Or write your own reason', 'aria-label': 'Your own reason', maxlength: '120', value: WHY.includes(k.why) ? '' : (k.why || '') });
+    const setOwn = async () => { const v = own.value.trim(); if (!v) return; await keeps.update(id, { why: v }); s.close(); draw(); };
+    own.addEventListener('keydown', (e) => { if (e.key === 'Enter') setOwn(); });
+    fill(s.body, h('div', { style: { display: 'flex', gap: '8px', marginBottom: '16px' } }, own, h('button', { class: 'btn small', text: 'Save', onClick: setOwn })), h('div', { style: { display: 'flex', flexWrap: 'wrap', gap: '8px' } }, WHY.map((w) => h('button', { class: 'chip' + (k.why === w ? ' on' : ''), text: w, onClick: async () => { await keeps.update(id, { why: k.why === w ? '' : w }); s.close(); draw(); } }))));
   }
   async function addTag(k) { const t = await promptBox('Add a tag', 'Tag'); if (t) { await keeps.update(id, { tags: [...k.tags, t] }); draw(); } }
   async function removeTag(k, t) { if (await confirmBox(`Remove "${t}"?`, 'The tag comes off this Keep only.', 'Remove', false)) { await keeps.update(id, { tags: k.tags.filter((x) => x !== t) }); draw(); } }

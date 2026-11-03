@@ -21,7 +21,15 @@ const norm = (s) => String(s || '').toLowerCase().replace(/[\u2018\u2019]/g, "'"
 export function verify(raw, passages, titles = []) {
   const j = parseJsonLoose(raw);
   const byId = new Map(passages.map((p) => [p.id, p]));
-  if (!j || !Array.isArray(j.parts)) return { insufficient: false, formatOk: false, parts: [{ source: 'general', text: String(raw || '').trim(), cites: [] }] };
+  if (!j || !Array.isArray(j.parts)) {
+    const t = String(raw || '').trim();
+    // Cut-off or fenced JSON must never reach the screen as code. Pull out the readable text values instead.
+    if (/^```|^\s*[{\[]/.test(t)) {
+      const texts = [...t.matchAll(/"text"\s*:\s*"((?:[^"\\]|\\.)*)/g)].map((m) => { try { return JSON.parse(`"${m[1]}"`); } catch (e) { return m[1]; } }).filter(Boolean);
+      return { insufficient: false, formatOk: false, cutOff: true, parts: [{ source: 'unsupported', text: texts.length ? `${texts.join('\n\n')}\n\n(This answer was cut off. Ask again for the full answer.)` : 'Kiko\'s answer was cut off. Ask again.', cites: [] }] };
+    }
+    return { insufficient: false, formatOk: false, parts: [{ source: 'general', text: t, cites: [] }] };
+  }
   const parts = [];
   for (const part of j.parts) {
     if (!part || typeof part.text !== 'string' || !part.text.trim()) continue;

@@ -22,7 +22,7 @@ export function createKeepService(repo) {
     const url = (input.url || split.url || '').trim();
     const note = (input.note ?? split.note ?? '').trim();
     if (!url && !note && !input.file) throw new UserError('Add a link or a note to keep.', { code: 'empty_keep' });
-    const info = url ? classify(url) : { kind: input.file ? (input.file.mime === 'application/pdf' ? 'pdf' : 'image') : 'note', label: input.file ? (input.file.mime === 'application/pdf' ? 'PDF' : 'Image') : 'Note', host: '' };
+    const info = url ? classify(url) : { kind: input.file ? (input.file.mime === 'application/pdf' ? 'pdf' : /^video\//.test(input.file.mime || '') ? 'video' : 'image') : 'note', label: input.file ? (input.file.mime === 'application/pdf' ? 'PDF' : /^video\//.test(input.file.mime || '') ? 'Video' : 'Image') : 'Note', host: '' };
     if (url) {
       const norm = normalizeUrl(url);
       const dup = (await repo.keeps.all()).find((k) => k.url && !k.deletedAt && normalizeUrl(k.url) === norm);

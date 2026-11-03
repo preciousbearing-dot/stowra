@@ -8,6 +8,33 @@ import { analyseKeep } from '../../ai/analyse.js';
 
 const KIND_LABEL = { educational: 'Teaches something', entertainment: 'Entertainment', inspirational: 'Inspirational', creative: 'An edit or craft to recreate', news: 'News', reference: 'Reference', other: 'Other' };
 
+/** No transcript yet: say why, offer another try, and let the person paste one. @param {any} k @param {any} ctx @param {() => void} redraw */
+export function noTranscriptView(k, ctx, redraw) {
+  const why = (k.meta && k.meta.transcriptError) || 'Stowra has not tried to read the transcript yet.';
+  const ta = h('textarea', { class: 'field', placeholder: 'Paste the transcript here', 'aria-label': 'Transcript text', style: { minHeight: '120px' } });
+  const status = h('div', { class: 'hint', style: { marginTop: '8px' }, 'aria-live': 'polite' });
+  const isVideo = k.kind === 'video';
+  const transcribe = h('button', { class: 'btn', text: 'Transcribe with Groq', onClick: async () => {
+    transcribe.disabled = true; status.textContent = 'Sending the audio to Groq. This can take a minute.';
+    try {
+      const stored = await ctx.repo.chunks.get(`file:${k.id}`); if (!stored || !stored.blob) throw new Error('The video file is missing.');
+      const text = await ctx.ai.transcribe(stored.blob, (k.meta.file && k.meta.file.name) || 'video.mp4');
+      if (!text) { status.textContent = 'No speech was found in this video.'; transcribe.disabled = false; return; }
+      await ctx.keeps.update(k.id, { text: `${k.title}\n\nTranscript:\n${text}`, status: 'ready', meta: { ...k.meta, hasTranscript: true, transcriptError: '', analysis: undefined } }); toast('Transcript saved'); redraw();
+    } catch (e) { transcribe.disabled = false; status.textContent = ctx.errorText ? ctx.errorText(e) : String(e.message || e); }
+  } });
+  const retry = isVideo ? transcribe : h('button', { class: 'btn', text: 'Try to get the transcript again', onClick: async () => { retry.disabled = true; status.textContent = 'Asking YouTube'; try { await ctx.pipeline.run(k.id); } catch (e) { /* shown below */ } redraw(); } });
+  const save = h('button', { class: 'chip', style: { marginTop: '10px' }, text: 'Use this transcript', onClick: async () => {
+    const v = ta.value.trim(); if (v.length < 200) { status.textContent = 'That is too short to be a transcript.'; return; }
+    const head = String(k.text || '').split('\n\nTranscript:')[0];
+    await ctx.keeps.update(k.id, { text: `${head}\n\nTranscript:\n${v}`, status: 'ready', meta: { ...k.meta, hasTranscript: true, transcriptError: '', pasted: true, analysis: undefined } }); toast('Transcript saved'); redraw();
+  } });
+  return h('div', { style: { marginTop: '20px' } },
+    h('div', { class: 'notice', style: { margin: 0 } }, h('div', { style: { fontWeight: '600' }, text: 'No transcript yet' }), h('p', { style: { margin: '6px 0 12px' }, text: isVideo ? 'Stowra reads the speech only when you tap this. The video file is sent to Groq (free key), up to 25 MB.' : why }), retry, status),
+    h('div', { class: 'lbl-strong', style: { marginTop: '20px' }, text: 'Or paste it yourself' }),
+    h('p', { class: 'hint', style: { margin: '4px 0 8px' }, text: 'On YouTube, open the video, tap the description, then Show transcript. Copy it and paste it here.' }), ta, save);
+}
+
 /** Full transcript, one tappable time per line. @param {any} k */
 export function transcriptView(k) {
   const t = transcriptOf(k.text);
@@ -27,6 +54,7 @@ export function transcriptView(k) {
 /** Study this: lessons from the transcript. Nothing to quiz, nothing to flip. @param {any} k @param {any} ctx @param {() => void} redraw */
 export function studyView(k, ctx, redraw) {
   const st = k.meta.study;
+  if (!k.meta.hasTranscript) return noTranscriptView(k, ctx, redraw);
   const box = h('div', { style: { marginTop: '20px' } });
   const noAI = !ctx.ai.ready();
   if (!st) {
