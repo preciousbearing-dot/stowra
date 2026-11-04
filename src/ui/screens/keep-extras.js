@@ -5,6 +5,8 @@ import { toast } from '../kit/overlay.js';
 import { transcriptOf } from '../../ai/study.js';
 import { studyKeep } from '../../ai/study.js';
 import { analyseKeep } from '../../ai/analyse.js';
+import { readImageFile } from '../../capture/images.js';
+import { PROVIDERS } from '../../ai/providers.js';
 import { transcribeKeep } from '../../capture/voice-flow.js';
 
 const KIND_LABEL = { educational: 'Teaches something', entertainment: 'Entertainment', inspirational: 'Inspirational', creative: 'An edit or craft to recreate', news: 'News', reference: 'Reference', other: 'Other' };
@@ -135,4 +137,24 @@ export function voiceCard(k, ctx) {
   if (v.summary) box.append(h('div', { class: 'notice', style: { margin: '16px 0 0' } }, h('div', { class: 'lbl', text: 'In short' }), h('p', { style: { margin: '6px 0 0' } }, ...rich(v.summary))));
   if (v.todo && v.todo.length) box.append(h('div', { class: 'notice', style: { margin: '12px 0 0' } }, h('div', { class: 'lbl', text: 'You said you would' }), h('ul', { class: 'lp' }, v.todo.map((x) => h('li', {}, ...rich(x))))));
   return box;
+}
+
+/** Read a picture with AI, only on a tap. The on-phone text reading has already run. @param {any} k @param {any} ctx @param {() => void} redraw */
+export function imageReadCard(k, ctx, redraw) {
+  const r = k.meta.aiRead;
+  if (r) return h('div', { class: 'notice', style: { margin: '20px 0 0' } }, h('div', { class: 'lbl', text: 'What the picture shows' }), r.description ? h('p', { style: { margin: '6px 0 0', whiteSpace: 'pre-wrap' } }, ...rich(r.description)) : null);
+  const p = ['gemini', 'openai', 'openrouter'].find((x) => ctx.ai.connected().includes(x));
+  const status = h('div', { class: 'hint', style: { marginTop: '8px' }, 'aria-live': 'polite' });
+  const go = h('button', { class: 'btn', text: p ? 'Read this picture with AI' : 'Connect AI', onClick: async () => {
+    if (!p) return ctx.router.go('/settings/ai');
+    go.disabled = true; status.textContent = `Sending the picture to ${PROVIDERS[p].name}.`;
+    try {
+      const stored = await ctx.repo.chunks.get(`file:${k.id}`); if (!stored || !stored.blob) throw new Error('The picture file is missing.');
+      const out = await ctx.ai.readImage(await readImageFile(stored.blob, 1600));
+      const own = String(k.text || '').trim();
+      const text = [k.title, out.description, out.text && !own.includes(out.text.slice(0, 30)) ? `Text in the picture:\n${out.text}` : '', own && own !== k.title ? own : ''].filter(Boolean).join('\n\n');
+      await ctx.keeps.update(k.id, { text, status: 'ready', meta: { ...k.meta, aiRead: { description: out.description, kind: out.kind, provider: out.provider, at: Date.now() }, analysis: undefined } }); toast('Picture read'); redraw();
+    } catch (e) { go.disabled = false; status.textContent = ctx.errorText ? ctx.errorText(e) : String(e.message || e); }
+  } });
+  return h('div', { class: 'notice', style: { margin: '20px 0 0' } }, h('div', { style: { fontWeight: '600' }, text: 'Read it with AI' }), h('p', { style: { margin: '6px 0 12px' }, text: p ? `Describes the picture and copies its text. This sends the picture to ${PROVIDERS[p].name}. Nothing is sent until you tap.` : 'Needs a Gemini or OpenAI key. The text in the picture is already read on this phone when it can be.' }), go, status);
 }

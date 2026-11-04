@@ -184,5 +184,23 @@ export function createAi({ repo, keeps, fetchImpl }) {
     throw new UserError('Reading speech needs a free Groq key (best accuracy) or a Gemini key. Add one in You, then AI connection.', { code: 'no_groq' });
   }
 
-  return { init, ready, connected, connect, disconnect, setActive, setModel, transcribe, transcribeFull, loadModels, chat, summarise, get config() { return cfg; }, providers: PROVIDERS, hasKey: (id) => Boolean(keys[id]) };
+  const SYS_IMG = 'You read one picture for its owner. Describe what it shows in 2 to 4 plain sentences, then copy every piece of readable text in it exactly, keeping line breaks. Never add facts that are not visible. Reply as JSON: {"description": string, "text": string, "kind": "screenshot"|"photo"|"document"|"chart"|"other"}';
+  /**
+   * Read a picture with a vision-capable model. Sends the picture to the provider, so the screen only calls it from a clear tap.
+   * @param {string} dataUrl a JPEG data URL @param {{question?: string, signal?: AbortSignal}} [o]
+   */
+  async function readImage(dataUrl, o = {}) {
+    const ok = connected();
+    const id = ['gemini', 'openai', 'openrouter'].find((x) => ok.includes(x));
+    if (!id) throw new UserError('Reading a picture with AI needs a Gemini or OpenAI key. Add one in You, then AI connection. The text in a picture is also read on the phone without AI.', { code: 'no_vision' });
+    const r = await call(id, '/chat/completions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: o.signal, body: JSON.stringify({ model: prov(id).model, temperature: 0, max_tokens: 2000, messages: [{ role: 'system', content: SYS_IMG }, { role: 'user', content: [{ type: 'text', text: o.question || 'Read this picture.' }, { type: 'image_url', image_url: { url: dataUrl } }] }] }) });
+    if (r.status === 401 || r.status === 403) throw new ProviderError('Key refused.', { code: 'key' });
+    if (r.status === 429) throw new ProviderError(`${PROVIDERS[id].name} says you have used the free limit for now. Try again in a few minutes.`, { code: '429' });
+    if (!r.ok) throw new ProviderError(`${PROVIDERS[id].name} could not read the picture (HTTP ${r.status}).`, { code: String(r.status) });
+    const j = await r.json(); const raw = String(j.choices?.[0]?.message?.content || '').trim();
+    const p = parseJsonLoose(raw);
+    return { description: String((p && p.description) || (p ? '' : raw)), text: String((p && p.text) || ''), kind: String((p && p.kind) || 'other'), provider: id };
+  }
+
+  return { init, ready, connected, connect, disconnect, setActive, setModel, transcribe, transcribeFull, readImage, loadModels, chat, summarise, get config() { return cfg; }, providers: PROVIDERS, hasKey: (id) => Boolean(keys[id]) };
 }
