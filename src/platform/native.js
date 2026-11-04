@@ -10,6 +10,7 @@ function plugin(name) {
   try { return cap.registerPlugin ? cap.registerPlugin(name) : (cap.Plugins || {})[name] || null; } catch (e) { return null; }
 }
 const N = plugin('StowraNative');
+const M = plugin('StowraMedia');
 const U = plugin('StowraUpdate');
 // The official Capacitor App plugin: it gives us the Android back button and a clean exit. Without a listener Android closes the app.
 const A = plugin('App');
@@ -60,6 +61,20 @@ export const native = {
   async setBars(color, darkIcons) { if (N) { try { await N.setBars({ color, darkIcons }); } catch (e) { /* ignore */ } } },
   /** Give the share sheet the current look. */
   async setOverlayTheme(tokens) { if (N) { try { await N.setOverlayTheme({ tokens }); } catch (e) { /* ignore */ } } },
+  /** Read the text in a picture on the phone with ML Kit. Nothing leaves the phone. Null when this build cannot do it. @param {Blob} blob @returns {Promise<string>} */
+  ocr: M ? async (blob) => {
+    const { readImageFile } = await import('../capture/images.js');
+    const url = await readImageFile(blob, 2400);
+    return String((await M.recognizeText({ data: url.split(',')[1] || '' })).text || '');
+  } : null,
+  /** True when the phone can choose a long video and cut its sound into small pieces. */
+  canPickVideo: Boolean(M),
+  /** Choose a video and cut out its sound. @returns {Promise<{cancelled?: boolean, name?: string, durationMs?: number, thumb?: string, dir?: string, segments?: {path: string, startMs: number, durationMs: number, bytes: number}[]}>} */
+  async pickVideo() { if (!M) return { cancelled: true }; return M.pickVideo(); },
+  /** A web address the page can fetch for a file the phone made. @param {string} path */
+  mediaFileUrl(path) { return cap.convertFileSrc ? cap.convertFileSrc('file://' + path) : path; },
+  /** Delete the sound pieces made for a video. @param {string} dir */
+  async cleanupMedia(dir) { if (M) { try { await M.cleanup({ dir }); } catch (e) { /* ignore */ } } },
   /** Open a link in the phone's browser. */
   async openExternal(url) {
     if (N) { try { await N.openExternal({ url }); return; } catch (e) { /* fall back */ } }

@@ -1,11 +1,11 @@
 {
-  "version": "0.3.1",
+  "version": "0.4.0",
   "min": "0.0.0",
   "notes": [
-    "YouTube transcripts now use the same method as Knowvia. If a video has no readable transcript, the Transcript tab says exactly why.",
-    "Every YouTube Keep now has Transcript and Study tabs. You can paste a transcript yourself when YouTube will not give one.",
-    "You can add videos and screen recordings from the plus button. Tap Transcribe to read the speech with your free Groq key, up to 25 MB.",
-    "Write your own reason for saving a Keep, when you save it or later.",
-    "Kiko no longer shows raw code when an answer is cut off."
+    "New voice notes. Record in Stowra, then turn it into text with your Groq key (most accurate) or your Gemini key. Names from your own Keeps and tags help it spell things right, and you can pick the language.",
+    "Voice notes keep the original wording and a tidied version side by side, with a short summary and any to-dos you said out loud.",
+    "Text inside pictures is now read on your phone, with no internet. Tap Read this picture with AI to get a description of a screenshot.",
+    "Long videos now work. Pick a video and Stowra cuts out its sound on the phone, then transcribes it in parts and joins the times.",
+    "Fixed a rare problem where tapping Back could skip a screen."
   ]
 }

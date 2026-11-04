@@ -1,10 +1,13 @@
-import { h } from '../kit/dom.js';
+import { h, fill } from '../kit/dom.js';
 import { icon } from '../kit/icons.js';
 import { rich } from '../kit/rich.js';
 import { toast } from '../kit/overlay.js';
 import { transcriptOf } from '../../ai/study.js';
 import { studyKeep } from '../../ai/study.js';
 import { analyseKeep } from '../../ai/analyse.js';
+import { readImageFile } from '../../capture/images.js';
+import { PROVIDERS } from '../../ai/providers.js';
+import { transcribeKeep } from '../../capture/voice-flow.js';
 
 const KIND_LABEL = { educational: 'Teaches something', entertainment: 'Entertainment', inspirational: 'Inspirational', creative: 'An edit or craft to recreate', news: 'News', reference: 'Reference', other: 'Other' };
 
@@ -13,10 +16,11 @@ export function noTranscriptView(k, ctx, redraw) {
   const why = (k.meta && k.meta.transcriptError) || 'Stowra has not tried to read the transcript yet.';
   const ta = h('textarea', { class: 'field', placeholder: 'Paste the transcript here', 'aria-label': 'Transcript text', style: { minHeight: '120px' } });
   const status = h('div', { class: 'hint', style: { marginTop: '8px' }, 'aria-live': 'polite' });
-  const isVideo = k.kind === 'video';
-  const transcribe = h('button', { class: 'btn', text: 'Transcribe with Groq', onClick: async () => {
+  const isVideo = k.kind === 'video' || k.kind === 'voice';
+  const transcribe = h('button', { class: 'btn', text: k.kind === 'voice' ? 'Turn into text' : 'Transcribe with Groq', onClick: async () => {
     transcribe.disabled = true; status.textContent = 'Sending the audio to Groq. This can take a minute.';
     try {
+      if (k.kind === 'voice' || (k.meta.media && k.meta.media.segments && k.meta.media.segments.length)) { const lang = await ctx.repo.prefs.read('voiceLang', ''); const r = await transcribeKeep(ctx, k.id, { language: lang, onStatus: (t) => { status.textContent = t; } }); if (r.empty) { status.textContent = 'No speech was found in this recording.'; transcribe.disabled = false; return; } toast('Transcript saved'); redraw(); return; }
       const stored = await ctx.repo.chunks.get(`file:${k.id}`); if (!stored || !stored.blob) throw new Error('The video file is missing.');
       const text = await ctx.ai.transcribe(stored.blob, (k.meta.file && k.meta.file.name) || 'video.mp4');
       if (!text) { status.textContent = 'No speech was found in this video.'; transcribe.disabled = false; return; }
@@ -30,13 +34,19 @@ export function noTranscriptView(k, ctx, redraw) {
     await ctx.keeps.update(k.id, { text: `${head}\n\nTranscript:\n${v}`, status: 'ready', meta: { ...k.meta, hasTranscript: true, transcriptError: '', pasted: true, analysis: undefined } }); toast('Transcript saved'); redraw();
   } });
   return h('div', { style: { marginTop: '20px' } },
-    h('div', { class: 'notice', style: { margin: 0 } }, h('div', { style: { fontWeight: '600' }, text: 'No transcript yet' }), h('p', { style: { margin: '6px 0 12px' }, text: isVideo ? 'Stowra reads the speech only when you tap this. The video file is sent to Groq (free key), up to 25 MB.' : why }), retry, status),
+    h('div', { class: 'notice', style: { margin: 0 } }, h('div', { style: { fontWeight: '600' }, text: 'No transcript yet' }), h('p', { style: { margin: '6px 0 12px' }, text: isVideo ? (k.meta.transcriptError && k.meta.transcriptError !== 'Nothing has been transcribed yet.' ? `${k.meta.transcriptError} ` : '') + 'Stowra reads the speech only when you tap this. The audio is sent to your speech provider (Groq or Gemini).' : why }), retry, status),
     h('div', { class: 'lbl-strong', style: { marginTop: '20px' }, text: 'Or paste it yourself' }),
     h('p', { class: 'hint', style: { margin: '4px 0 8px' }, text: 'On YouTube, open the video, tap the description, then Show transcript. Copy it and paste it here.' }), ta, save);
 }
 
 /** Full transcript, one tappable time per line. @param {any} k */
 export function transcriptView(k) {
+  if (k.meta.rawTranscript && k.meta.voice && k.meta.voice.cleaned) {
+    let raw = false; const wrap = h('div'); const bar = h('div', { class: 'vrow', style: { marginTop: '16px', marginBottom: '0' } });
+    const draw = () => { const btn = h('button', { class: 'chip', text: raw ? 'Showing original wording' : 'Showing tidied text', onClick: () => { raw = !raw; draw(); } }); fill(bar, btn, h('span', { class: 'hint', text: raw ? 'Exactly what the speech model heard.' : 'Punctuation and names fixed. Tap to see the original.' })); fill(wrap, bar, body(raw)); };
+    const body = (r) => transcriptView({ ...k, text: r ? `Transcript:\n${k.meta.rawTranscript}` : k.text, meta: { ...k.meta, rawTranscript: '' } });
+    draw(); return wrap;
+  }
   const t = transcriptOf(k.text);
   const lines = t.split('\n').filter(Boolean);
   const note = [k.meta.autoCaptions ? 'Automatic captions, so some words may be wrong.' : '', k.meta.transcriptLang ? `Language: ${k.meta.transcriptLang}.` : ''].filter(Boolean).join(' ');
@@ -113,4 +123,38 @@ export function analysisCard(k, ctx, openTab) {
       low ? CHOICES.filter((c) => c[1] !== 'study' || k.meta.hasTranscript).map(([l, v]) => h('button', { class: 'chip', text: l, onClick: () => choose(v) }))
         : [a.studyable ? h('button', { class: 'chip on', onClick: () => openTab('study') }, icon('spark', 16), 'Study this') : null, ...a.actions.map((x) => h('button', { class: 'chip', text: x, onClick: () => ask(x) }))])));
   return slot;
+}
+
+/** Player, summary and stated to-dos for a voice note. @param {any} k @param {any} ctx */
+export function voiceCard(k, ctx) {
+  const box = h('div', { style: { marginTop: '20px' } });
+  const v = k.meta.voice || {};
+  ctx.repo.chunks.get(`file:${k.id}`).then((f) => {
+    if (!f || !f.blob) return;
+    const url = URL.createObjectURL(f.blob); ctx.onLeave && ctx.onLeave(() => URL.revokeObjectURL(url));
+    box.prepend(h('audio', { class: 'vplayer', controls: true, src: url, preload: 'metadata', 'aria-label': 'Play the voice note' }));
+  }).catch(() => {});
+  if (v.summary) box.append(h('div', { class: 'notice', style: { margin: '16px 0 0' } }, h('div', { class: 'lbl', text: 'In short' }), h('p', { style: { margin: '6px 0 0' } }, ...rich(v.summary))));
+  if (v.todo && v.todo.length) box.append(h('div', { class: 'notice', style: { margin: '12px 0 0' } }, h('div', { class: 'lbl', text: 'You said you would' }), h('ul', { class: 'lp' }, v.todo.map((x) => h('li', {}, ...rich(x))))));
+  return box;
+}
+
+/** Read a picture with AI, only on a tap. The on-phone text reading has already run. @param {any} k @param {any} ctx @param {() => void} redraw */
+export function imageReadCard(k, ctx, redraw) {
+  const r = k.meta.aiRead;
+  if (r) return h('div', { class: 'notice', style: { margin: '20px 0 0' } }, h('div', { class: 'lbl', text: 'What the picture shows' }), r.description ? h('p', { style: { margin: '6px 0 0', whiteSpace: 'pre-wrap' } }, ...rich(r.description)) : null);
+  const p = ['gemini', 'openai', 'openrouter'].find((x) => ctx.ai.connected().includes(x));
+  const status = h('div', { class: 'hint', style: { marginTop: '8px' }, 'aria-live': 'polite' });
+  const go = h('button', { class: 'btn', text: p ? 'Read this picture with AI' : 'Connect AI', onClick: async () => {
+    if (!p) return ctx.router.go('/settings/ai');
+    go.disabled = true; status.textContent = `Sending the picture to ${PROVIDERS[p].name}.`;
+    try {
+      const stored = await ctx.repo.chunks.get(`file:${k.id}`); if (!stored || !stored.blob) throw new Error('The picture file is missing.');
+      const out = await ctx.ai.readImage(await readImageFile(stored.blob, 1600));
+      const own = String(k.text || '').trim();
+      const text = [k.title, out.description, out.text && !own.includes(out.text.slice(0, 30)) ? `Text in the picture:\n${out.text}` : '', own && own !== k.title ? own : ''].filter(Boolean).join('\n\n');
+      await ctx.keeps.update(k.id, { text, status: 'ready', meta: { ...k.meta, aiRead: { description: out.description, kind: out.kind, provider: out.provider, at: Date.now() }, analysis: undefined } }); toast('Picture read'); redraw();
+    } catch (e) { go.disabled = false; status.textContent = ctx.errorText ? ctx.errorText(e) : String(e.message || e); }
+  } });
+  return h('div', { class: 'notice', style: { margin: '20px 0 0' } }, h('div', { style: { fontWeight: '600' }, text: 'Read it with AI' }), h('p', { style: { margin: '6px 0 12px' }, text: p ? `Describes the picture and copies its text. This sends the picture to ${PROVIDERS[p].name}. Nothing is sent until you tap.` : 'Needs a Gemini or OpenAI key. The text in the picture is already read on this phone when it can be.' }), go, status);
 }

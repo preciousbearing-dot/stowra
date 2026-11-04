@@ -8,6 +8,7 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(StowraNativePlugin.class);
         registerPlugin(StowraUpdatePlugin.class);
+        registerPlugin(StowraMediaPlugin.class);
         super.onCreate(savedInstanceState);
     }
 }

@@ -196,3 +196,10 @@ button.notice { display: block; text-align: left; font-family: inherit; }
 [data-style="simple"] .grid.masonry .card .cover { width: 100%; aspect-ratio: 4 / 3; border-radius: 20px 20px 0 0; font-size: 14px; }
 [data-style="simple"] .grid.masonry .card .meta { padding: 12px 14px 14px; }
 [data-style="simple"] .grid.masonry .card:nth-child(even) .cover { aspect-ratio: 1; }
+/* Voice note recorder */
+.vrow { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; } .vrow .field { flex: 1; } .vlbl { font-size: 14px; color: var(--t2); min-width: 72px; }
+.vrec, .vstop { display: grid; place-items: center; width: 84px; height: 84px; margin: 20px auto 8px; border-radius: 42px; border: 0; background: var(--ac); color: var(--oa); box-shadow: 0 10px 28px rgba(0,0,0,.3); }
+.vstop { background: var(--tx); color: var(--bg); } .vsq { width: 26px; height: 26px; border-radius: 6px; background: var(--bg); display: block; }
+.vtime { font-family: var(--serif); font-size: 56px; line-height: 64px; text-align: center; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; margin: 8px 0 16px; }
+.vmeter { display: flex; align-items: center; justify-content: center; gap: 4px; height: 64px; } .vbar { display: block; width: 5px; height: 6px; border-radius: 3px; background: var(--ac); transition: height .08s linear; }
+.vplayer { width: 100%; margin: 20px 0 0; }
