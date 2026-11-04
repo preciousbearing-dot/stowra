@@ -21,8 +21,8 @@ export function createKeepService(repo) {
     const split = splitShare(raw);
     const url = (input.url || split.url || '').trim();
     const note = (input.note ?? split.note ?? '').trim();
-    if (!url && !note && !input.file) throw new UserError('Add a link or a note to keep.', { code: 'empty_keep' });
-    const info = url ? classify(url) : { kind: input.file ? (input.file.mime === 'application/pdf' ? 'pdf' : /^video\//.test(input.file.mime || '') ? 'video' : 'image') : 'note', label: input.file ? (input.file.mime === 'application/pdf' ? 'PDF' : /^video\//.test(input.file.mime || '') ? 'Video' : 'Image') : 'Note', host: '' };
+    if (!url && !note && !input.file && !input.media) throw new UserError('Add a link or a note to keep.', { code: 'empty_keep' });
+    const info = url ? classify(url) : input.media ? { kind: 'video', label: 'Video' } : { kind: input.file ? (input.file.mime === 'application/pdf' ? 'pdf' : /^video\//.test(input.file.mime || '') ? 'video' : /^audio\//.test(input.file.mime || '') ? 'voice' : 'image') : 'note', label: input.file ? (input.file.mime === 'application/pdf' ? 'PDF' : /^video\//.test(input.file.mime || '') ? 'Video' : /^audio\//.test(input.file.mime || '') ? 'Voice note' : 'Image') : 'Note', host: '' };
     if (url) {
       const norm = normalizeUrl(url);
       const dup = (await repo.keeps.all()).find((k) => k.url && !k.deletedAt && normalizeUrl(k.url) === norm);
@@ -30,6 +30,11 @@ export function createKeepService(repo) {
     }
     const k = createKeep({ url, note, why: input.why || '', title: input.title || '', source: input.source || info.label, kind: info.kind, hasFile: Boolean(input.file) });
     if (!k.title) k.title = input.file?.name || (url ? info.host || url : note.split('\n')[0].slice(0, 80));
+    if (input.media) {
+      const m = input.media; k.title = k.title || m.name || 'Video';
+      k.meta.media = { dir: m.dir || '', segments: m.segments || [], durationMs: m.durationMs || 0 }; k.meta.durationSecs = Math.round((m.durationMs || 0) / 1000);
+      if (m.thumb) k.thumb = `data:image/jpeg;base64,${m.thumb}`;
+    }
     if (input.file) { k.meta.file = { name: input.file.name || 'file', mime: input.file.mime, size: input.file.size || 0 }; await repo.chunks.put({ id: `file:${k.id}`, blob: input.file.blob }); }
     await repo.keeps.put(k);
     changed({ type: 'add', id: k.id });

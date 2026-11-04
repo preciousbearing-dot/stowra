@@ -1,5 +1,10 @@
 /** A video or screen recording picked from the phone: a cover frame and the length. The speech is read only when the person taps Transcribe. @param {any} k @param {any} tools */
 export async function videoExtractor(k, tools) {
+  if (k.meta && k.meta.media) {
+    if (k.meta.hasTranscript) return { status: 'ready', how: 'Video with transcript' };
+    const secs = k.meta.durationSecs || 0;
+    return { text: k.title, status: 'partial', how: `Video sound is ready${secs ? `, ${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')} long` : ''}. Tap Transcribe in the Transcript tab to read what is said`, meta: { hasTranscript: false, transcriptError: (k.meta && k.meta.transcriptError) || 'Nothing has been transcribed yet.' } };
+  }
   const stored = await tools.repo.chunks.get(`file:${k.id}`);
   const blob = stored && stored.blob;
   if (!blob) return { status: 'failed', how: 'The video file is missing.' };

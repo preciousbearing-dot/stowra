@@ -114,25 +114,75 @@ export function createAi({ repo, keeps, fetchImpl }) {
     await keeps.update(keepId, { summary: j.summary.trim(), points: (Array.isArray(j.points) ? j.points : []).map(String).slice(0, 8) });
   }
 
-  /**
-   * Turn the speech in a short video or recording into a timestamped transcript. Uses Groq Whisper, only on a clear tap, and sends the file to Groq.
-   * @param {Blob} blob @param {string} name @param {{signal?: AbortSignal}} [o]
-   */
-  async function transcribe(blob, name, o = {}) {
-    if (!connected().includes('groq')) throw new UserError('Reading speech in a video needs a free Groq key. Add it in You, then AI connection.', { code: 'no_groq' });
-    if (blob.size > 25 * 1024 * 1024) throw new UserError('This file is over 25 MB, which is the most Groq reads at once. Trim the recording or record a shorter one.', { code: 'too_big' });
-    const fd = new FormData(); fd.append('file', blob, name || 'video.mp4'); fd.append('model', 'whisper-large-v3-turbo'); fd.append('response_format', 'verbose_json'); fd.append('temperature', '0');
-    const r = await call('groq', '/audio/transcriptions', { method: 'POST', body: fd, signal: o.signal });
-    if (r.status === 401 || r.status === 403) throw new ProviderError('Key refused.', { code: 'key' });
-    if (!r.ok) throw new ProviderError(`Groq could not read the audio (HTTP ${r.status}).`, { code: String(r.status) });
-    const j = await r.json(); const segs = Array.isArray(j.segments) ? j.segments : [];
-    const stamp = (t) => `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
-    if (!segs.length) return String(j.text || '').trim() ? `[00:00] ${String(j.text).trim()}` : '';
+  const stamp = (t) => `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
+  const sleep = (ms, signal) => new Promise((res, rej) => { const t = setTimeout(res, ms); signal && signal.addEventListener('abort', () => { clearTimeout(t); rej(new DOMException('Cancelled', 'AbortError')); }, { once: true }); });
+  const b64 = (blob) => new Promise((res, rej) => { const fr = new FileReader(); fr.onload = () => res(String(fr.result).split(',')[1] || ''); fr.onerror = () => rej(fr.error); fr.readAsDataURL(blob); });
+
+  /** Group timed pieces into paragraphs of about 30 seconds, each starting with [MM:SS]. @param {{start: number, text: string}[]} segs */
+  function paragraphs(segs) {
     const out = []; let cur = ''; let start = 0;
     for (const sg of segs) { const t = String(sg.text || '').trim(); if (!t) continue; if (!cur || sg.start - start > 30) { if (cur) out.push(cur.trim()); start = sg.start || 0; cur = `[${stamp(start)}] `; } cur += t + ' '; }
     if (cur.trim()) out.push(cur.trim());
     return out.join('\n');
   }
 
-  return { init, ready, connected, connect, disconnect, setActive, setModel, transcribe, loadModels, chat, summarise, get config() { return cfg; }, providers: PROVIDERS, hasKey: (id) => Boolean(keys[id]) };
+  /** Whisper sometimes invents words over silence. A piece the model itself marks as very probably silent and unsure is dropped. */
+  const keepSeg = (sg) => !(sg.no_speech_prob > 0.6 && sg.avg_logprob < -0.8) && !(sg.compression_ratio > 2.6);
+
+  async function viaGroq(blob, name, o) {
+    const fd = new FormData(); fd.append('file', blob, name || 'audio.webm'); fd.append('model', o.accurate ? 'whisper-large-v3' : 'whisper-large-v3-turbo'); fd.append('response_format', 'verbose_json'); fd.append('temperature', '0');
+    if (o.language) fd.append('language', o.language);
+    if (o.prompt) fd.append('prompt', String(o.prompt).slice(0, 700));
+    let r;
+    for (let n = 0; n < 3; n++) {
+      r = await call('groq', '/audio/transcriptions', { method: 'POST', body: fd, signal: o.signal });
+      if (r.status !== 429 && r.status < 500) break;
+      if (n < 2) await sleep(2500 * (n + 1), o.signal);
+    }
+    if (r.status === 401 || r.status === 403) throw new ProviderError('Key refused.', { code: 'key' });
+    if (r.status === 413) throw new UserError('This file is too big for Groq. Use a shorter recording.', { code: 'too_big' });
+    if (r.status === 429) throw new ProviderError('Groq says you have used the free limit for now. Try again in a few minutes.', { code: '429' });
+    if (!r.ok) throw new ProviderError(`Groq could not read the audio (HTTP ${r.status}).`, { code: String(r.status) });
+    const j = await r.json(); const segs = (Array.isArray(j.segments) ? j.segments : []).filter(keepSeg);
+    const text = segs.length ? paragraphs(segs) : (String(j.text || '').trim() && !(Array.isArray(j.segments) && j.segments.length) ? `[00:00] ${String(j.text).trim()}` : '');
+    return { text, provider: 'groq', model: o.accurate ? 'whisper-large-v3' : 'whisper-large-v3-turbo', language: j.language || o.language || '' };
+  }
+
+  async function viaGemini(blob, name, o) {
+    if (blob.size > 18 * 1024 * 1024) throw new UserError('This audio is too big for Gemini to take in one go (18 MB). Add a free Groq key, or record a shorter note.', { code: 'too_big' });
+    const model = prov('gemini').model || 'gemini-2.5-flash';
+    const mime = (blob.type || 'audio/webm').split(';')[0];
+    const ask = `Transcribe this audio exactly as spoken. Do not summarise, translate or add anything. ${o.language ? `The language is ${o.language}. ` : ''}${o.prompt ? `These names and terms may appear, so spell them this way when you hear them: ${String(o.prompt).slice(0, 600)}. ` : ''}Add proper punctuation and paragraphs. Start a new paragraph about every 30 seconds with its start time in square brackets like [00:00] or [01:30]. If there is no speech, reply with nothing.`;
+    const body = { contents: [{ parts: [{ text: ask }, { inline_data: { mime_type: mime, data: await b64(blob) } }] }], generationConfig: { temperature: 0, maxOutputTokens: 16000 } };
+    let r;
+    for (let n = 0; n < 3; n++) {
+      try { r = await doFetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': keys.gemini }, body: JSON.stringify(body), signal: o.signal }); } catch (e) { if (e && e.name === 'AbortError') throw e; throw new NetworkError('Could not reach Google Gemini.', { code: 'network' }); }
+      if (r.status !== 429 && r.status < 500) break;
+      if (n < 2) await sleep(3000 * (n + 1), o.signal);
+    }
+    if (r.status === 401 || r.status === 403) throw new ProviderError('Key refused.', { code: 'key' });
+    if (r.status === 429) throw new ProviderError('Gemini says you have used the free limit for now. Try again in a few minutes.', { code: '429' });
+    if (!r.ok) throw new ProviderError(`Gemini could not read the audio (HTTP ${r.status}).`, { code: String(r.status) });
+    const j = await r.json(); const text = (j.candidates?.[0]?.content?.parts || []).map((p) => p.text || '').join('').trim();
+    return { text, provider: 'gemini', model, language: o.language || '' };
+  }
+
+  /**
+   * Turn speech in an audio or video file into a timestamped transcript. Groq Whisper first (accurate: whisper-large-v3 when asked), Gemini as the fallback.
+   * The file goes to the provider only because the person tapped for it.
+   * @param {Blob} blob @param {string} name @param {{signal?: AbortSignal, accurate?: boolean, language?: string, prompt?: string}} [o]
+   * @returns {Promise<string>} @see transcribeFull for the provider and model used
+   */
+  async function transcribe(blob, name, o = {}) { return (await transcribeFull(blob, name, o)).text; }
+  async function transcribeFull(blob, name, o = {}) {
+    const ok = connected();
+    if (ok.includes('groq')) {
+      if (blob.size > 25 * 1024 * 1024) throw new UserError('This file is over 25 MB, which is the most Groq reads at once. Trim the recording or record a shorter one.', { code: 'too_big' });
+      return viaGroq(blob, name, o);
+    }
+    if (ok.includes('gemini')) return viaGemini(blob, name, o);
+    throw new UserError('Reading speech needs a free Groq key (best accuracy) or a Gemini key. Add one in You, then AI connection.', { code: 'no_groq' });
+  }
+
+  return { init, ready, connected, connect, disconnect, setActive, setModel, transcribe, transcribeFull, loadModels, chat, summarise, get config() { return cfg; }, providers: PROVIDERS, hasKey: (id) => Boolean(keys[id]) };
 }

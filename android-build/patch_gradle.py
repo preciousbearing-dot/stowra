@@ -28,6 +28,8 @@ s = sub1(r'buildTypes\s*\{', signing, s, 'buildTypes')
 head, tail = s.split('buildTypes {', 1)
 tail = sub1(r'(release\s*\{)', r'\1\n            signingConfig signingConfigs.release', tail, 'release block')
 s = head + 'buildTypes {' + tail
+# On-device text recognition (Latin script, bundled model, works offline)
+s = sub1(r'dependencies\s*\{', "dependencies {\n    implementation 'com.google.mlkit:text-recognition:16.0.1'", s, 'dependencies')
 open(g, 'w').write(s)
 
 # Keep target SDK 34 for now so the layout is not forced edge to edge. Revisit before any Play Store release.
@@ -38,7 +40,7 @@ open(v, 'w').write(t)
 # ---- manifest: share target, update installer, permissions
 m = root + '/app/src/main/AndroidManifest.xml'
 x = open(m).read()
-for perm in ('REQUEST_INSTALL_PACKAGES', 'ACCESS_NETWORK_STATE'):
+for perm in ('REQUEST_INSTALL_PACKAGES', 'ACCESS_NETWORK_STATE', 'RECORD_AUDIO', 'MODIFY_AUDIO_SETTINGS'):
     if perm not in x:
         x = sub1(r'<application', '<uses-permission android:name="android.permission.%s" />\n    <application' % perm, x, 'permission ' + perm)
 if 'ShareActivity' not in x:

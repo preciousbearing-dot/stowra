@@ -65,5 +65,6 @@ export const FILTERS = [
   { id: 'article', label: 'Articles', kinds: ['article', 'reddit', 'x', 'linkedin', 'link'] },
   { id: 'repo', label: 'Repos', kinds: ['github'] },
   { id: 'file', label: 'Files', kinds: ['pdf', 'image'] },
+  { id: 'voice', label: 'Voice', kinds: ['voice'] },
   { id: 'note', label: 'Notes', kinds: ['note'] },
 ];
