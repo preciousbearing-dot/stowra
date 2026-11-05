@@ -65,6 +65,27 @@ async function fromPlayer(id) {
   return { tracks: [], ...(seen || {}), why };
 }
 
+/**
+ * Direct video files YouTube hands to its own apps: ready-made mp4 files with sound, best first.
+ * @param {string} id @returns {Promise<{streams: {url: string, height: number, ua: string}[], why: string}>}
+ */
+export async function youtubeStreams(id) {
+  let why = '';
+  for (const c of CLIENTS) {
+    try {
+      const j = await getJson(PLAYER, { body: { ...c.body, videoId: id, contentCheckOk: true, racyCheckOk: true }, headers: { 'User-Agent': c.ua, 'X-YouTube-Client-Name': c.id }, timeout: 20000 });
+      const ps = (j && j.playabilityStatus) || {};
+      if (ps.status && ps.status !== 'OK') { why = ps.status === 'LOGIN_REQUIRED' ? 'YouTube asks for a sign-in for this video.' : `YouTube would not give this video out: ${ps.reason || ps.status}.`; continue; }
+      const sd = (j && j.streamingData) || {};
+      const streams = (sd.formats || []).filter((f) => f.url && /video\/mp4/.test(f.mimeType || '') && f.audioQuality).map((f) => ({ url: f.url, height: f.height || 0, ua: c.ua }));
+      streams.sort((a, b) => b.height - a.height);
+      if (streams.length) return { streams, why: '' };
+      why = 'YouTube gave no ready-made video file for this one.';
+    } catch (e) { why = `Could not reach YouTube (${(e && e.code) || 'network'}).`; }
+  }
+  return { streams: [], why };
+}
+
 async function trackText(t) {
   const base = String(t.baseUrl || '').replace(/&fmt=[^&]*/, ''); if (!base) return '';
   const h = { 'User-Agent': WEB_UA };

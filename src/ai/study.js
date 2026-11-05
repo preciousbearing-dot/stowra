@@ -28,7 +28,7 @@ Reply as JSON: {"lessons": [{"title": string, "timestamp": "MM:SS" or "", "expla
 Make 1 to 4 lessons. "explanation" is 2 to 4 sentences. "example" may be empty if the speaker gave none.`;
 const SYS_WRAP = `You write the frame around a set of study lessons. Reply as JSON: {"title": string, "goal": string, "recap": [string]}. "goal" is one sentence on what the learner will be able to do. "recap" is 3 to 6 short lines. Use only the lesson titles and points given. Plain language, no dashes as punctuation, no emoji.`;
 
-async function once(ai, o, tries = 3) {
+export async function once(ai, o, tries = 3) {
   let last;
   for (let n = 0; n < tries; n++) {
     try { return await ai.chat(o); } catch (e) {

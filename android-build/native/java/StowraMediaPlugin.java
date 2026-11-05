@@ -39,6 +39,10 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.Iterator;
+import java.util.concurrent.ConcurrentHashMap;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
@@ -127,9 +131,11 @@ public class StowraMediaPlugin extends Plugin {
         return n;
     }
 
-    private static JSObject prepareVideo(Context c, Uri uri) throws Exception {
+    private static JSObject prepareVideo(Context c, Uri uri) throws Exception { return prepareVideo(c, uri, nameOf(c, uri), true); }
+
+    private static JSObject prepareVideo(Context c, Uri uri, String name, boolean copy) throws Exception {
         JSObject out = new JSObject();
-        out.put("name", nameOf(c, uri));
+        out.put("name", name);
         long durationMs = 0;
         MediaMetadataRetriever mmr = new MediaMetadataRetriever();
         try {
@@ -152,7 +158,7 @@ public class StowraMediaPlugin extends Plugin {
         if (!dir.exists() && !dir.mkdirs()) throw new Exception("No room to work in.");
         out.put("dir", dir.getAbsolutePath());
         out.put("segments", cutAudio(c, uri, dir));
-        try { out.put("stored", copyIn(c, uri, nameOf(c, uri))); } catch (Throwable ignored) { /* the sound is still usable without the video file */ }
+        if (copy) try { out.put("stored", copyIn(c, uri, name)); } catch (Throwable ignored) { /* the sound is still usable without the video file */ }
         return out;
     }
 
@@ -316,6 +322,154 @@ public class StowraMediaPlugin extends Plugin {
                     }
                     call.resolve(r);
                 } catch (Throwable t) { call.reject("Could not save to the gallery: " + t.getMessage()); }
+            }
+        }).start();
+    }
+
+    // ---- Downloading, and working on files that are already inside the app. ----
+
+    private final ConcurrentHashMap<String, Boolean> stopped = new ConcurrentHashMap<String, Boolean>();
+
+    private static String extFor(String mime, String url) {
+        String m = mime == null ? "" : mime.toLowerCase();
+        if (m.contains("video/mp4")) return ".mp4"; if (m.contains("video/webm")) return ".webm"; if (m.contains("video/quicktime")) return ".mov";
+        if (m.contains("audio/mp4") || m.contains("audio/x-m4a")) return ".m4a"; if (m.contains("audio/mpeg")) return ".mp3"; if (m.contains("audio/webm")) return ".webm";
+        if (m.contains("image/jpeg")) return ".jpg"; if (m.contains("image/png")) return ".png"; if (m.contains("image/webp")) return ".webp"; if (m.contains("image/gif")) return ".gif";
+        String path = url == null ? "" : url.split("[?#]")[0];
+        int dot = path.lastIndexOf('.');
+        if (dot >= 0 && path.length() - dot <= 5) return path.substring(dot).replaceAll("[^A-Za-z0-9.]", "");
+        return ".mp4";
+    }
+
+    /** Opens an address, following redirects by hand, with the given headers and an optional byte range. */
+    private static HttpURLConnection openFollowing(String url, JSObject headers, String range) throws Exception {
+        String current = url; HttpURLConnection con = null;
+        for (int hop = 0; hop < 6; hop++) {
+            con = (HttpURLConnection) new URL(current).openConnection();
+            con.setInstanceFollowRedirects(false);
+            con.setConnectTimeout(20000); con.setReadTimeout(30000);
+            Iterator<String> keys = headers.keys();
+            while (keys.hasNext()) { String k = keys.next(); String v = headers.optString(k, ""); if (!v.isEmpty()) con.setRequestProperty(k, v); }
+            if (range != null) con.setRequestProperty("Range", range);
+            int code = con.getResponseCode();
+            if (code >= 300 && code < 400 && con.getHeaderField("Location") != null) { current = new URL(new URL(current), con.getHeaderField("Location")).toString(); con.disconnect(); continue; }
+            break;
+        }
+        return con;
+    }
+
+    /**
+     * Downloads one file straight into the app folder, without holding it in memory. Follows redirects, sends the headers it is given,
+     * reports progress as "dlprogress" and can be stopped with cancelDownload. Refuses web pages and error answers.
+     * With chunkBytes set it asks for the file in ranges of that size, which video servers need for long videos.
+     */
+    @PluginMethod
+    public void downloadFile(final PluginCall call) {
+        final String url = call.getString("url");
+        final String id = call.getString("id", "d");
+        final JSObject headers = call.getObject("headers", new JSObject());
+        final long maxBytes = call.getLong("maxBytes", 1500L * 1024L * 1024L);
+        final long chunk = call.getLong("chunkBytes", 0L);
+        if (url == null || !url.startsWith("http")) { call.reject("That is not a download address."); return; }
+        stopped.remove(id);
+        new Thread(new Runnable() {
+            @Override public void run() {
+                File out = null; OutputStream os = null;
+                try {
+                    long start = 0; long total = -1; long done = 0; long lastTick = 0; String mime = null; String name = null;
+                    while (true) {
+                        String range = chunk > 0 ? "bytes=" + start + "-" + (start + chunk - 1) : null;
+                        HttpURLConnection con = openFollowing(url, headers, range);
+                        int code = con.getResponseCode();
+                        if (code >= 400) { if (out != null) out.delete(); call.reject("The site refused the download (HTTP " + code + ").", String.valueOf(code)); return; }
+                        if (name == null) {
+                            mime = con.getContentType();
+                            String lower = mime == null ? "" : mime.toLowerCase();
+                            if (lower.startsWith("text/") || lower.contains("json") || lower.contains("html")) { call.reject("The site sent a web page, not the file.", "page"); return; }
+                            name = "d-" + System.currentTimeMillis() + extFor(mime, url);
+                            out = new File(storeDirOf(getContext()), name);
+                            os = new FileOutputStream(out);
+                        }
+                        boolean partial = code == 206;
+                        String cr = con.getHeaderField("Content-Range");
+                        if (partial && cr != null && cr.contains("/")) { try { total = Long.parseLong(cr.substring(cr.lastIndexOf('/') + 1).trim()); } catch (Exception ignored) { } }
+                        else if (!partial) total = con.getContentLengthLong();
+                        if (total > maxBytes) { os.close(); out.delete(); call.reject("That file is too large to save.", "large"); return; }
+                        InputStream in = con.getInputStream();
+                        byte[] buf = new byte[128 * 1024]; int n; long got = 0;
+                        while ((n = in.read(buf)) > 0) {
+                            if (stopped.containsKey(id)) { os.close(); in.close(); out.delete(); call.reject("Download stopped.", "stopped"); return; }
+                            os.write(buf, 0, n); done += n; got += n;
+                            if (done > maxBytes) { os.close(); in.close(); out.delete(); call.reject("That file is too large to save.", "large"); return; }
+                            long now = System.currentTimeMillis();
+                            if (now - lastTick > 400) { lastTick = now; JSObject p = new JSObject(); p.put("id", id); p.put("done", done); p.put("total", total); notifyListeners("dlprogress", p); }
+                        }
+                        in.close(); con.disconnect();
+                        if (!partial || chunk <= 0) break;
+                        start += got;
+                        if (got == 0 || (total > 0 && start >= total)) break;
+                    }
+                    os.close();
+                    if (out.length() < 1024) { out.delete(); call.reject("The site sent an empty file.", "empty"); return; }
+                    JSObject r = new JSObject();
+                    r.put("name", name); r.put("size", out.length()); r.put("mime", mime == null ? "video/mp4" : mime.split(";")[0].trim());
+                    call.resolve(r);
+                } catch (Throwable t) {
+                    try { if (os != null) os.close(); } catch (Throwable ignored) { }
+                    if (out != null && out.exists()) out.delete();
+                    call.reject("The download failed: " + t.getMessage(), "network");
+                }
+            }
+        }).start();
+    }
+
+    @PluginMethod
+    public void cancelDownload(PluginCall call) { String id = call.getString("id"); if (id != null) stopped.put(id, true); call.resolve(); }
+
+    /** Cuts the sound out of a video already in the app folder, so it can be transcribed, and takes a cover frame. */
+    @PluginMethod
+    public void prepareStored(final PluginCall call) {
+        final File f = storedFile(getContext(), call.getString("name"));
+        if (f == null || !f.exists()) { call.reject("That video is not on this phone any more."); return; }
+        new Thread(new Runnable() {
+            @Override public void run() {
+                try { call.resolve(prepareVideo(getContext(), Uri.fromFile(f), f.getName(), false)); }
+                catch (Throwable t) { call.reject("Could not read the sound in this video: " + t.getMessage()); }
+            }
+        }).start();
+    }
+
+    /** Looks at pictures taken evenly through a video and reads any text on them (links, commands, names). No network. */
+    @PluginMethod
+    public void scanFrames(final PluginCall call) {
+        final File f = storedFile(getContext(), call.getString("name"));
+        final int count = Math.max(2, Math.min(call.getInt("count", 24), 60));
+        if (f == null || !f.exists()) { call.reject("That video is not on this phone any more."); return; }
+        new Thread(new Runnable() {
+            @Override public void run() {
+                MediaMetadataRetriever mmr = new MediaMetadataRetriever();
+                try {
+                    mmr.setDataSource(f.getAbsolutePath());
+                    String d = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
+                    long dur = d == null ? 0 : Long.parseLong(d);
+                    if (dur <= 0) { call.reject("This video has no length to scan."); return; }
+                    if (recognizer == null) recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS);
+                    JSArray frames = new JSArray();
+                    for (int i = 0; i < count; i++) {
+                        long at = Math.min(dur - 1, (dur * (2L * i + 1)) / (2L * count));
+                        Bitmap b = mmr.getFrameAtTime(at * 1000L, MediaMetadataRetriever.OPTION_CLOSEST_SYNC);
+                        if (b == null) continue;
+                        int w = 1280; if (b.getWidth() > w) { int h = Math.max(1, Math.round(b.getHeight() * (w / (float) b.getWidth()))); b = Bitmap.createScaledBitmap(b, w, h, true); }
+                        try {
+                            Text t = com.google.android.gms.tasks.Tasks.await(recognizer.process(InputImage.fromBitmap(b, 0)));
+                            String text = t.getText();
+                            if (text != null && text.trim().length() > 2) { JSObject o = new JSObject(); o.put("atMs", at); o.put("text", text); frames.put(o); }
+                        } catch (Throwable ignored) { /* skip this frame */ }
+                    }
+                    JSObject r = new JSObject(); r.put("frames", frames); r.put("durationMs", dur);
+                    call.resolve(r);
+                } catch (Throwable t) { call.reject("Scanning the video failed: " + t.getMessage()); }
+                finally { try { mmr.release(); } catch (Throwable ignored) { } }
             }
         }).start();
     }

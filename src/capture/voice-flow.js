@@ -44,7 +44,8 @@ export async function transcribeKeep(ctx, id, o = {}) {
   const name = title || k.title || 'Voice note';
   const meta = { ...k.meta, hasTranscript: true, transcriptError: '', rawTranscript: cleaned ? rawAll : '', analysis: undefined, transcriptLang: (last && last.language) || '', voice: { provider: last && last.provider, model: last && last.model, language: last && last.language, cleaned, summary, todo, at: Date.now() } };
   if (media) { meta.media = { ...media, segments: [], done: true }; try { await ctx.native.cleanupMedia(media.dir); } catch (e) { /* the cache is cleared by Android anyway */ } }
-  await ctx.keeps.update(id, { title: name, text: `${name}\n\nTranscript:\n${clean}`, status: 'ready', meta });
+  const base = String(k.text || '').split('\n\nTranscript:')[0].trim();
+  await ctx.keeps.update(id, { title: name, text: `${base && k.kind !== 'voice' ? base : name}\n\nTranscript:\n${clean}`, status: 'ready', meta });
   return { empty: false, title: name };
 }
 
