@@ -43,6 +43,7 @@ async function boot() {
 
 export async function startApp(root, repo, persistent) {
   root.replaceChildren();
+  if (native.files) repo.files.useNative(native.files);
   const keeps = createKeepService(repo);
   const ai = createAi({ repo, keeps });
   await ai.init();
@@ -75,6 +76,8 @@ export async function startApp(root, repo, persistent) {
   };
   await intake();
   pipeline.resume();
+  // Older versions kept files in the database. Move them into the app folder quietly, a few at a time, once the app has settled.
+  if (native.files) setTimeout(async () => { try { const moved = await repo.files.migrate(await repo.keeps.all()); if (moved) keeps.bus.emit('changed', { type: 'files-moved' }); } catch (e) { /* try again next start */ } }, 4000);
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { intake(); pipeline.resume(); } });
   window.addEventListener('online', () => pipeline.resume());
   // Once a day, quietly look for an update and mention it once.

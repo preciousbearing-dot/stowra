@@ -1,10 +1,11 @@
 {
-  "version": "0.5.1",
+  "version": "0.6.0",
   "min": "0.0.0",
   "notes": [
-    "Fixed voice notes that would not play. Your recordings now play in the Keep, even after the text is made.",
-    "Fixed the tab rows sliding the whole page sideways. Tabs on a Keep, the filters on Trove and the buttons in the Add sheet now scroll on their own.",
-    "A soft fade now shows at the edge when there is more to scroll to, and the tab you pick scrolls into view.",
-    "Voice note now sits right next to Paste in the Add sheet."
+    "Videos you add now save inside Stowra as real files, so big videos no longer slow the app. Older files move over quietly in the background.",
+    "Tap a picture to see it full screen and pinch to zoom. Tap a video to play it right in the app.",
+    "New Save to gallery in the Keep menu and in the viewer. Pictures, videos and recordings go to your gallery in a Stowra folder, so other apps can open them.",
+    "Pinterest pins now save the real picture in full size, with the title, who pinned it, the board and the link the pin points to.",
+    "Backups keep files under 25 MB. Longer videos stay on the phone and the backup says how many were left out."
   ]
 }

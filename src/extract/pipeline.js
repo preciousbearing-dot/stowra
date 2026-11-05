@@ -21,6 +21,7 @@ export function createPipeline({ keeps, extractors, tools }) {
       const patch = { status: r.status || STATUS.READY, error: '', meta: { ...cur.meta, ...(r.meta || {}), how: r.how || '' } };
       if (r.text) patch.text = r.text;
       if (r.thumb && !cur.thumb) patch.thumb = r.thumb;
+      if (r.file && r.file.blob) { const saved = await tools.repo.files.save(id, r.file.blob, r.file); patch.meta.file = { name: r.file.name, mime: r.file.mime, size: r.file.size || r.file.blob.size, ...(saved.store ? { store: saved.store } : {}) }; }
       // A title the user set stays; a generated one (the link itself) is replaced.
       if (r.title && (!cur.title || cur.title === cur.url || cur.title === (cur.meta.host || '') || /^https?:\/\//.test(cur.title) || cur.title.length < 4 || cur.meta.autoTitle !== false)) { patch.title = r.title; patch.meta.autoTitle = true; }
       await keeps.update(id, patch);

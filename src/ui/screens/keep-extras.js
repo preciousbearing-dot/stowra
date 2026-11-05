@@ -21,8 +21,8 @@ export function noTranscriptView(k, ctx, redraw) {
     transcribe.disabled = true; status.textContent = 'Sending the audio to Groq. This can take a minute.';
     try {
       if (k.kind === 'voice' || (k.meta.media && k.meta.media.segments && k.meta.media.segments.length)) { const lang = await ctx.repo.prefs.read('voiceLang', ''); const r = await transcribeKeep(ctx, k.id, { language: lang, onStatus: (t) => { status.textContent = t; } }); if (r.empty) { status.textContent = 'No speech was found in this recording.'; transcribe.disabled = false; return; } toast('Transcript saved'); redraw(); return; }
-      const stored = await ctx.repo.chunks.get(`file:${k.id}`); if (!stored || !stored.blob) throw new Error('The video file is missing.');
-      const text = await ctx.ai.transcribe(stored.blob, (k.meta.file && k.meta.file.name) || 'video.mp4');
+      const vb = await ctx.repo.files.blob(k); if (!vb) throw new Error('The video file is missing.');
+      const text = await ctx.ai.transcribe(vb, (k.meta.file && k.meta.file.name) || 'video.mp4');
       if (!text) { status.textContent = 'No speech was found in this video.'; transcribe.disabled = false; return; }
       await ctx.keeps.update(k.id, { text: `${k.title}\n\nTranscript:\n${text}`, status: 'ready', meta: { ...k.meta, hasTranscript: true, transcriptError: '', analysis: undefined } }); toast('Transcript saved'); redraw();
     } catch (e) { transcribe.disabled = false; status.textContent = ctx.errorText ? ctx.errorText(e) : String(e.message || e); }
@@ -129,10 +129,10 @@ export function analysisCard(k, ctx, openTab) {
 export function voiceCard(k, ctx) {
   const box = h('div', { style: { marginTop: '20px' } });
   const v = k.meta.voice || {};
-  ctx.repo.chunks.get(`file:${k.id}`).then((f) => {
-    if (!f || !f.blob) return;
-    const url = URL.createObjectURL(f.blob); ctx.onLeave && ctx.onLeave(() => URL.revokeObjectURL(url));
-    box.prepend(h('audio', { class: 'vplayer', controls: true, src: url, preload: 'metadata', 'aria-label': 'Play the voice note' }));
+  ctx.repo.files.open(k).then((f) => {
+    if (!f) return;
+    ctx.onLeave && ctx.onLeave(f.release);
+    box.prepend(h('audio', { class: 'vplayer', controls: true, src: f.url, preload: 'metadata', 'aria-label': 'Play the voice note' }));
   }).catch(() => {});
   if (v.summary) box.append(h('div', { class: 'notice', style: { margin: '16px 0 0' } }, h('div', { class: 'lbl', text: 'In short' }), h('p', { style: { margin: '6px 0 0' } }, ...rich(v.summary))));
   if (v.todo && v.todo.length) box.append(h('div', { class: 'notice', style: { margin: '12px 0 0' } }, h('div', { class: 'lbl', text: 'You said you would' }), h('ul', { class: 'lp' }, v.todo.map((x) => h('li', {}, ...rich(x))))));
@@ -149,8 +149,8 @@ export function imageReadCard(k, ctx, redraw) {
     if (!p) return ctx.router.go('/settings/ai');
     go.disabled = true; status.textContent = `Sending the picture to ${PROVIDERS[p].name}.`;
     try {
-      const stored = await ctx.repo.chunks.get(`file:${k.id}`); if (!stored || !stored.blob) throw new Error('The picture file is missing.');
-      const out = await ctx.ai.readImage(await readImageFile(stored.blob, 1600));
+      const pb = await ctx.repo.files.blob(k); if (!pb) throw new Error('The picture file is missing.');
+      const out = await ctx.ai.readImage(await readImageFile(pb, 1600));
       const own = String(k.text || '').trim();
       const text = [k.title, out.description, out.text && !own.includes(out.text.slice(0, 30)) ? `Text in the picture:\n${out.text}` : '', own && own !== k.title ? own : ''].filter(Boolean).join('\n\n');
       await ctx.keeps.update(k.id, { text, status: 'ready', meta: { ...k.meta, aiRead: { description: out.description, kind: out.kind, provider: out.provider, at: Date.now() }, analysis: undefined } }); toast('Picture read'); redraw();

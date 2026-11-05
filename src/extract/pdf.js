@@ -19,8 +19,8 @@ const MAX_PAGES = 300;
 export async function pdfExtractor(k, tools) {
   const pdfjs = await loadPdfjs();
   let data;
-  const stored = await tools.repo.chunks.get(`file:${k.id}`);
-  if (stored && stored.blob) data = await stored.blob.arrayBuffer(); else if (k.url) data = await getBytes(k.url); else throw new ExtractionError('No file.', { code: 'nofile' });
+  const stored = await tools.repo.files.blob(k);
+  if (stored) data = await stored.arrayBuffer(); else if (k.url) data = await getBytes(k.url); else throw new ExtractionError('No file.', { code: 'nofile' });
   const doc = await pdfjs.getDocument({ data }).promise;
   const n = Math.min(doc.numPages, MAX_PAGES); const parts = [];
   for (let i = 1; i <= n; i++) {

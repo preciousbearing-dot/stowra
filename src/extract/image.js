@@ -2,8 +2,7 @@ import { readImageFile } from '../capture/images.js';
 
 /** Images: a small picture for the Trove, and on-device text reading where the phone supports it. Nothing leaves the phone here. @param {any} k @param {any} tools */
 export async function imageExtractor(k, tools) {
-  const stored = await tools.repo.chunks.get(`file:${k.id}`);
-  const blob = stored && stored.blob;
+  const blob = await tools.repo.files.blob(k);
   let thumb = null; if (blob) { try { thumb = await readImageFile(blob, 640); } catch (e) { /* none */ } }
   let text = '';
   if (blob && tools.native.ocr) { try { text = await tools.native.ocr(blob); } catch (e) { /* no text */ } }

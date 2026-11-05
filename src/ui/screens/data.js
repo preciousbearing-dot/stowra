@@ -28,12 +28,12 @@ export async function dataScreen(ctx) {
   fill(el, head(ctx, 'Backup and restore'),
     h('div', { class: 'notice', text: 'Your Trove lives only on this phone. A backup is one file you can keep in Google Drive, email to yourself, or move to a new phone. AI keys are never included.' }),
     h('div', { class: 'sect' }, h('h2', { class: 'h2', text: 'Back up now' }), h('p', { class: 'sub', text: last ? `Last backup ${ago(last)}` : 'You have not backed up yet.' }),
-      h('label', { class: 'row', style: { padding: '12px 0', borderBottom: '0' } }, toggle, h('div', { class: 'grow' }, h('div', { text: 'Include saved files' }), h('div', { class: 'rs', text: 'PDFs and pictures you added. Makes the file bigger.' }))),
+      h('label', { class: 'row', style: { padding: '12px 0', borderBottom: '0' } }, toggle, h('div', { class: 'grow' }, h('div', { text: 'Include saved files' }), h('div', { class: 'rs', text: 'PDFs, pictures and recordings under 25 MB. Longer videos stay on the phone and are left out. Makes the file bigger.' }))),
       h('button', { class: 'btn', style: { width: '100%' }, text: 'Save backup file', onClick: async (e) => {
         e.target.disabled = true; const b = await buildBackup(ctx.repo, { files: withFiles });
         const ok = await native.saveFile(b.name, b.text);
         e.target.disabled = false;
-        if (ok) { await ctx.repo.prefs.write('lastBackup', Date.now()); say(`Saved ${b.name} with ${b.counts.keeps} Keeps, ${b.counts.collections} Collections and ${b.counts.creations} Creations.${native.update.available ? ' Find it in your Downloads folder.' : ''}`); } else say('Could not save the file.', true);
+        if (ok) { await ctx.repo.prefs.write('lastBackup', Date.now()); say(`Saved ${b.name} with ${b.counts.keeps} Keeps, ${b.counts.collections} Collections and ${b.counts.creations} Creations.${b.counts.skipped ? ` ${b.counts.skipped} large ${b.counts.skipped === 1 ? 'file was' : 'files were'} left out.` : ''}${native.update.available ? ' Find it in your Downloads folder.' : ''}`); } else say('Could not save the file.', true);
       } })),
     h('div', { class: 'sect' }, h('h2', { class: 'h2', text: 'Restore' }), h('p', { class: 'sub', text: 'Choose a Stowra backup file. Nothing on this phone is overwritten.' }), h('button', { class: 'btn ghost', style: { width: '100%', marginTop: '12px' }, text: 'Choose backup file', onClick: () => picker.click() }), picker),
     h('div', { class: 'pad' }, status));

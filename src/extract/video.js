@@ -5,8 +5,7 @@ export async function videoExtractor(k, tools) {
     const secs = k.meta.durationSecs || 0;
     return { text: k.title, status: 'partial', how: `Video sound is ready${secs ? `, ${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')} long` : ''}. Tap Transcribe in the Transcript tab to read what is said`, meta: { hasTranscript: false, transcriptError: (k.meta && k.meta.transcriptError) || 'Nothing has been transcribed yet.' } };
   }
-  const stored = await tools.repo.chunks.get(`file:${k.id}`);
-  const blob = stored && stored.blob;
+  const blob = await tools.repo.files.blob(k);
   if (!blob) return { status: 'failed', how: 'The video file is missing.' };
   const info = await frameOf(blob);
   const secs = info ? Math.round(info.secs) : 0;

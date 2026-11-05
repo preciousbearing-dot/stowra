@@ -75,6 +75,29 @@ export const native = {
   mediaFileUrl(path) { return cap.convertFileSrc ? cap.convertFileSrc('file://' + path) : path; },
   /** Delete the sound pieces made for a video. @param {string} dir */
   async cleanupMedia(dir) { if (M) { try { await M.cleanup({ dir }); } catch (e) { /* ignore */ } } },
+  /** Files kept inside the app folder, so big videos never sit in the app database. Null in a browser and in builds without the media plugin. */
+  files: M ? (() => {
+    let dir = '';
+    const need = async () => { if (!dir) dir = String((await M.storeInfo({})).dir || ''); return dir; };
+    const toB64 = (blob) => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1] || ''); r.onerror = () => rej(r.error); r.readAsDataURL(blob); });
+    return {
+      /** Address the page can play or show. Call ready() once first. @param {string} name */
+      url(name) { return cap.convertFileSrc ? cap.convertFileSrc('file://' + dir + '/' + name) : dir + '/' + name; },
+      ready: need,
+      /** Write a blob in pieces so a large file never has to sit in memory as one string. @param {string} name @param {Blob} blob */
+      async write(name, blob) {
+        await need(); const STEP = 786432; let i = 0;
+        if (!blob.size) { await M.storeChunk({ name, base64: '', append: false }); return 0; }
+        for (; i < blob.size; i += STEP) await M.storeChunk({ name, base64: await toB64(blob.slice(i, i + STEP)), append: i > 0 });
+        const info = await M.storeInfo({ name }); if (!info.exists || info.size !== blob.size) throw new Error('The file did not save in full.');
+        return info.size;
+      },
+      async info(name) { return M.storeInfo({ name }); },
+      async remove(name) { try { await M.deleteStored({ name }); } catch (e) { /* already gone */ } },
+      /** Copy into the phone gallery. @returns {Promise<{where: string}>} */
+      exportToGallery: (name, displayName, mime) => M.exportToGallery({ name, displayName, mime }),
+    };
+  })() : null,
   /** Open a link in the phone's browser. */
   async openExternal(url) {
     if (N) { try { await N.openExternal({ url }); return; } catch (e) { /* fall back */ } }

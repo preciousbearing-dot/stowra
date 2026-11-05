@@ -1,4 +1,5 @@
 import { STORES } from './migrations.js';
+import { createFileStore } from './files.js';
 import { createIdbAdapter } from './idb-adapter.js';
 import { createMemoryAdapter } from './memory-adapter.js';
 
@@ -25,6 +26,7 @@ function view(adapter, name) {
  */
 export function createRepository(adapter) {
   const repo = { adapter };
+  repo.files = createFileStore(repo);
   for (const s of STORES) repo[s] = view(adapter, s);
   /** Small key and value settings, stored as {id, value}. */
   repo.prefs = {
