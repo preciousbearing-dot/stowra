@@ -1,4 +1,4 @@
-import { getJson, getText, htmlToDoc, pictureAsThumb, resolveUrl } from './http.js';
+import { getJson, getText, getRaw, cookieHeader, htmlToDoc, meta, pictureAsThumb, resolveUrl } from './http.js';
 import { articleExtractor } from './article.js';
 
 const NEEDS = (name) => `${name} shares no captions or video content with other apps. Paste the caption into Notes, or add a screen recording`;
@@ -34,7 +34,47 @@ export async function tiktokExtractor(k) {
   return { title: (title || `TikTok by ${author || 'unknown'}`).slice(0, 120), thumb, text: [title, author && `By ${author}`, spoken && `Transcript:\n${spoken}`].filter(Boolean).join('\n\n'), status: spoken ? 'ready' : 'partial', how: spoken ? 'Caption, cover and subtitles' : 'Caption and cover. The spoken words need a screen recording or pasted text', meta: { author, hasTranscript: Boolean(spoken) } };
 }
 
-export const instagramExtractor = async () => ({ status: 'attention', how: NEEDS('Instagram') });
+const MOBILE_UA = 'Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Mobile Safari/537.36';
+const igFix = (v) => v.replace(/\\+u0026/g, '&').replace(/\\+\//g, '/').replace(/\\+"/g, '"');
+
+/** The shortcode and kind in an Instagram link. @param {string} url @returns {{kind: string, code: string}|null} */
+export function instagramRef(url) { const m = String(url).match(/instagram\.com\/(?:[A-Za-z0-9_.]+\/)?(p|reel|reels|tv)\/([A-Za-z0-9_-]+)/); return m ? { kind: m[1] === 'reels' ? 'reel' : m[1], code: m[2] } : null; }
+
+/** What the public embed page of a post or reel shows: caption, cover, author and, for videos, the direct file. Best effort. @param {string} html */
+export function instagramFromEmbed(html) {
+  const out = { caption: '', author: '', thumb: '', video: '' };
+  const i = html.indexOf('video_url');
+  if (i >= 0) { const m = html.slice(i + 9).match(/^\\*"\s*:\s*\\*"(https?:[^"]*?)\\*"/); if (m) out.video = igFix(m[1]); }
+  const doc = htmlToDoc(html);
+  const cap = doc.querySelector('.Caption'); if (cap) { const user = cap.querySelector('.CaptionUsername'); if (user) { out.author = user.textContent.trim(); user.remove(); } out.caption = cap.textContent.replace(/\s*\n\s*/g, '\n').trim(); }
+  const img = doc.querySelector('img.EmbeddedMediaImage'); out.thumb = (img && img.getAttribute('src')) || meta(doc, 'og:image');
+  if (!out.video) out.video = meta(doc, 'og:video', 'og:video:secure_url');
+  if (!out.caption) out.caption = meta(doc, 'og:description');
+  return out;
+}
+
+/** Instagram: the caption (where creators put repository links and tool names), the cover and the author, from the public embed page. The video itself is downloaded only when asked. */
+export async function instagramExtractor(k) {
+  const ref = instagramRef(await resolveUrl(k.url)) || instagramRef(k.url);
+  if (!ref) return { status: 'attention', how: NEEDS('Instagram') };
+  let p = null;
+  try { p = instagramFromEmbed(await getText(`https://www.instagram.com/${ref.kind === 'reel' ? 'reel' : ref.kind}/${ref.code}/embed/captioned/`, { headers: { 'User-Agent': MOBILE_UA, 'Accept-Language': 'en' } })); } catch (e) { /* fall through */ }
+  if (!p || (!p.caption && !p.thumb)) return { status: 'attention', how: `${NEEDS('Instagram')}. Or tap Download video on this Keep to try getting the video` };
+  const thumb = await pictureAsThumb(p.thumb);
+  const first = p.caption.split('\n').find((x) => x.trim()) || '';
+  return { title: (first || `Instagram ${ref.kind === 'p' ? 'post' : 'reel'}${p.author ? ` by ${p.author}` : ''}`).slice(0, 120), thumb, text: [p.caption, p.author && `By ${p.author}`].filter(Boolean).join('\n\n'), status: 'partial', how: 'Caption and cover. Tap Download video to save the video and read what it teaches' };
+}
+
+/** The video file address in a TikTok page, and the cookie the file server wants. @param {string} html */
+export function tiktokVideoFromHtml(html) {
+  const m = html.match(/<script id="__UNIVERSAL_DATA_FOR_REHYDRATION__"[^>]*>([\s\S]*?)<\/script>/); if (!m) return '';
+  try {
+    const j = JSON.parse(m[1]); const d = j['__DEFAULT_SCOPE__'] && j['__DEFAULT_SCOPE__']['webapp.video-detail'] && j['__DEFAULT_SCOPE__']['webapp.video-detail'].itemInfo && j['__DEFAULT_SCOPE__']['webapp.video-detail'].itemInfo.itemStruct;
+    const v = (d && d.video) || {}; const br = (v.bitrateInfo || [])[0]; const list = br && br.PlayAddr && br.PlayAddr.UrlList;
+    return v.downloadAddr || v.playAddr || (list && list[0]) || '';
+  } catch (e) { return ''; }
+}
+export const tiktokPage = async (url) => { const r = await getRaw(url, { headers: { 'Accept-Language': 'en', 'User-Agent': MOBILE_UA } }); return { html: r.text, cookie: cookieHeader(r.headers) }; };
 export const facebookExtractor = async () => ({ status: 'attention', how: NEEDS('Facebook') });
 export const linkedinExtractor = async (k) => { try { return await articleExtractor(k); } catch (e) { return { status: 'attention', how: 'LinkedIn asks people to log in. Paste the text into Notes and Stowra can read it' }; } };
 

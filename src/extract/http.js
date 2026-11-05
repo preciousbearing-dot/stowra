@@ -9,7 +9,7 @@ async function nativeReq(url, o) {
   try {
     const r = await CH().request({ url, method: o.method || (body !== undefined ? 'POST' : 'GET'), headers, data: body, responseType: 'text', connectTimeout: 20000, readTimeout: o.timeout || 30000 });
     const text = typeof r.data === 'string' ? r.data : JSON.stringify(r.data);
-    return { ok: r.status >= 200 && r.status < 300, status: r.status, url: r.url || url, text: async () => text, json: async () => JSON.parse(text) };
+    return { ok: r.status >= 200 && r.status < 300, status: r.status, url: r.url || url, headers: r.headers || {}, text: async () => text, json: async () => JSON.parse(text) };
   } catch (e) { throw new NetworkError('Could not reach the site.', { code: 'network', cause: e }); }
 }
 
@@ -22,6 +22,19 @@ async function req(url, o = {}) {
 }
 /** Follow redirects (short links) and return the final address. Never throws. @param {string} url */
 export async function resolveUrl(url) { try { const r = await req(url, { timeout: 10000 }); return r.url || url; } catch (e) { return url; } }
+/** The page text plus the answer's headers (needed for cookies). @returns {Promise<{ok: boolean, status: number, url: string, text: string, headers: Record<string, string>}>} */
+export async function getRaw(url, o) {
+  const r = await req(url, o); const headers = {};
+  if (r.headers && typeof r.headers.forEach === 'function') r.headers.forEach((v, k) => { headers[String(k).toLowerCase()] = v; });
+  else for (const [k, v] of Object.entries(r.headers || {})) headers[k.toLowerCase()] = Array.isArray(v) ? v.join('\n') : String(v);
+  return { ok: r.ok, status: r.status, url: r.url || url, text: await r.text(), headers };
+}
+/** Turn Set-Cookie headers into one Cookie header value. @param {Record<string, string>} headers */
+export function cookieHeader(headers) {
+  const raw = String((headers && headers['set-cookie']) || ''); if (!raw) return '';
+  const out = []; for (const part of raw.split(/\n|,(?=\s*[A-Za-z0-9_-]+=)/)) { const nv = part.split(';')[0].trim(); if (/^[A-Za-z0-9_.-]+=/.test(nv)) out.push(nv); }
+  return out.join('; ');
+}
 /** @returns {Promise<string>} */
 export async function getText(url, o) { const r = await req(url, o); if (!r.ok) throw new ExtractionError(`HTTP ${r.status}`, { code: `http_${r.status}` }); return r.text(); }
 export async function getJson(url, o) { const r = await req(url, o); if (!r.ok) throw new ExtractionError(`HTTP ${r.status}`, { code: `http_${r.status}` }); return r.json(); }

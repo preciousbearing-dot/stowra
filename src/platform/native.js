@@ -94,6 +94,20 @@ export const native = {
       },
       async info(name) { return M.storeInfo({ name }); },
       async remove(name) { try { await M.deleteStored({ name }); } catch (e) { /* already gone */ } },
+      /**
+       * Download an address straight into the app folder. Returns the stored name, size and type.
+       * @param {{url: string, headers?: Record<string, string>, id: string, chunk?: boolean, onProgress?: (done: number, total: number) => void}} o
+       */
+      async download(o) {
+        await need(); let sub = null;
+        if (o.onProgress && M.addListener) { try { sub = await M.addListener('dlprogress', (e) => { if (e && e.id === o.id) o.onProgress(Number(e.done) || 0, Number(e.total) || 0); }); } catch (e) { /* no progress bar */ } }
+        try { return await M.downloadFile({ url: o.url, headers: o.headers || {}, id: o.id, chunkBytes: o.chunk ? 9 * 1024 * 1024 : 0 }); } finally { if (sub && sub.remove) sub.remove(); }
+      },
+      cancel: (id) => M.cancelDownload({ id }),
+      /** Cut the sound out of a stored video (for transcribing). */
+      prepare: (name) => M.prepareStored({ name }),
+      /** Read text on pictures taken through a stored video. @returns {Promise<{frames: {atMs: number, text: string}[], durationMs: number}>} */
+      scan: (name, count) => M.scanFrames({ name, count }),
       /** Copy into the phone gallery. @returns {Promise<{where: string}>} */
       exportToGallery: (name, displayName, mime) => M.exportToGallery({ name, displayName, mime }),
     };

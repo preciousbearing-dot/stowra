@@ -1,11 +1,12 @@
 {
-  "version": "0.6.0",
+  "version": "0.7.0",
   "min": "0.0.0",
   "notes": [
-    "Videos you add now save inside Stowra as real files, so big videos no longer slow the app. Older files move over quietly in the background.",
-    "Tap a picture to see it full screen and pinch to zoom. Tap a video to play it right in the app.",
-    "New Save to gallery in the Keep menu and in the viewer. Pictures, videos and recordings go to your gallery in a Stowra folder, so other apps can open them.",
-    "Pinterest pins now save the real picture in full size, with the title, who pinned it, the board and the link the pin points to.",
-    "Backups keep files under 25 MB. Longer videos stay on the phone and the backup says how many were left out."
+    "New Download video on YouTube, Instagram, TikTok and Pinterest video Keeps. The video saves on your phone, plays in the app, and can go to your gallery. Pick it up from the Overview tab.",
+    "If a site blocks the direct download, Stowra can use a helper service as a fallback. Settings, Video downloads shows what a helper can see, lets you turn it off, and lets you add your own.",
+    "Repository links are now found in descriptions, captions, transcripts and notes, including links that are spoken out loud. Open one, or Keep it as its own Keep.",
+    "Scan the video for links reads text shown on screen, like a repository name or a command, without sending anything off your phone.",
+    "New Guide tab on videos. It turns what the video says and shows into steps to follow, with commands you can copy and boxes to tick off.",
+    "A video you downloaded can be transcribed from its sound when it has no captions. Instagram reels now keep their caption and cover."
   ]
 }

@@ -14,6 +14,7 @@ export function settingsScreen(ctx) {
     h('div', { style: { marginTop: '8px' } },
       row('key', 'AI connection', ctx.ai.ready() ? `${PROVIDERS[a]?.name || 'Connected'}, ${ctx.ai.config.providers[a]?.model || ''}` : 'Not connected', '/settings/ai'),
       row('search', 'Smart search', ctx.smart && ctx.smart.on ? 'On, finds Keeps by meaning' : 'Off', '/settings/smart'),
+      row('download', 'Video downloads', 'Helper services for hard sites', '/settings/downloads'),
       row('sun', 'Appearance', 'Style, theme and mode', '/settings/look'),
       row('lock', 'Privacy lock', ctx.lock.enabled ? 'PIN is on' : 'Off', '/settings/privacy'),
       row('download', 'Backup and restore', 'Save your Trove as a file', '/settings/data'),
@@ -53,5 +54,26 @@ export async function smartSettingsScreen(ctx) {
   };
   const off = sm.onChange(() => draw()); ctx.onLeave(off);
   await draw();
+  return el;
+}
+
+/** Video download settings: when Stowra may use a helper service, and an optional helper of your own. */
+export async function downloadSettingsScreen(ctx) {
+  const el = h('div', {});
+  const cfg = await ctx.downloads.settings();
+  const addr = h('input', { class: 'field', type: 'url', placeholder: 'https://your-helper.example.com/', value: cfg.cobalt, 'aria-label': 'Helper address', autocomplete: 'off', autocapitalize: 'none', spellcheck: false });
+  const key = h('input', { class: 'field', type: 'password', placeholder: 'Access key, only if your helper asks', value: cfg.cobaltKey, 'aria-label': 'Helper access key', autocomplete: 'off', style: { marginTop: '8px' } });
+  const save = async () => { await ctx.downloads.saveSettings({ helpers: tog.checked, cobalt: addr.value.trim(), cobaltKey: key.value.trim() }); toast('Saved'); };
+  const tog = h('input', { type: 'checkbox', checked: cfg.helpers, 'aria-label': 'Use helper services when the direct download fails', onChange: save });
+  fill(el, h('div', { class: 'top' }, h('button', { class: 'iconbtn plain', 'aria-label': 'Back', onClick: () => ctx.router.back() }, icon('back')), h('h1', { class: 'title', style: { fontSize: '26px' }, text: 'Video downloads' })),
+    h('div', { class: 'pad' },
+      h('div', { class: 'notice', text: 'Stowra always tries to get the video straight from the site, from your phone, first. Sites change how they work, and sometimes that stops. When it does, a helper service can step in.' }),
+      h('div', { class: 'notice', style: { marginTop: '12px' }, text: 'A helper sees the link of the video you are downloading. It does not see your Keeps, your notes or your keys. Turn this off if you do not want any link to leave your phone.' }),
+      h('label', { class: 'row', style: { cursor: 'pointer', marginTop: '16px' } }, icon('download', 22), h('div', { class: 'grow' }, h('div', { text: 'Use helper services' }), h('div', { class: 'rs', text: 'Only when the direct download fails' })), tog),
+      h('div', { class: 'lbl-strong', style: { marginTop: '24px' }, text: 'Your own helper (optional)' }),
+      h('p', { class: 'hint', style: { margin: '4px 0 8px' }, text: 'Works with any server that speaks the cobalt download format, including one you run yourself. For TikTok, Stowra also has a built-in helper service.' }),
+      addr, key, h('button', { class: 'btn', style: { width: '100%', marginTop: '12px' }, text: 'Save helper', onClick: save }),
+      h('a', { class: 'ext', style: { display: 'inline-block', marginTop: '16px' }, href: 'https://github.com/imputnet/cobalt/blob/main/docs/run-an-instance.md', text: 'How to run your own helper', onClick: (e) => { e.preventDefault(); import('../../platform/native.js').then((n) => n.native.openExternal('https://github.com/imputnet/cobalt/blob/main/docs/run-an-instance.md')); } }),
+      h('p', { class: 'hint', style: { marginTop: '16px' }, text: 'Only download what you have the right to keep. Saved videos stay on this phone.' })));
   return el;
 }

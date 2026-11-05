@@ -8,6 +8,7 @@ import { analyseKeep } from '../../ai/analyse.js';
 import { readImageFile } from '../../capture/images.js';
 import { PROVIDERS } from '../../ai/providers.js';
 import { transcribeKeep } from '../../capture/voice-flow.js';
+import { mediaKind } from './viewer.js';
 
 const KIND_LABEL = { educational: 'Teaches something', entertainment: 'Entertainment', inspirational: 'Inspirational', creative: 'An edit or craft to recreate', news: 'News', reference: 'Reference', other: 'Other' };
 
@@ -16,11 +17,19 @@ export function noTranscriptView(k, ctx, redraw) {
   const why = (k.meta && k.meta.transcriptError) || 'Stowra has not tried to read the transcript yet.';
   const ta = h('textarea', { class: 'field', placeholder: 'Paste the transcript here', 'aria-label': 'Transcript text', style: { minHeight: '120px' } });
   const status = h('div', { class: 'hint', style: { marginTop: '8px' }, 'aria-live': 'polite' });
-  const isVideo = k.kind === 'video' || k.kind === 'voice';
+  const hasVideoFile = mediaKind(k) === 'video' && Boolean(k.meta.file && k.meta.file.store);
+  const isVideo = k.kind === 'video' || k.kind === 'voice' || hasVideoFile;
   const transcribe = h('button', { class: 'btn', text: k.kind === 'voice' ? 'Turn into text' : 'Transcribe with Groq', onClick: async () => {
     transcribe.disabled = true; status.textContent = 'Sending the audio to Groq. This can take a minute.';
     try {
-      if (k.kind === 'voice' || (k.meta.media && k.meta.media.segments && k.meta.media.segments.length)) { const lang = await ctx.repo.prefs.read('voiceLang', ''); const r = await transcribeKeep(ctx, k.id, { language: lang, onStatus: (t) => { status.textContent = t; } }); if (r.empty) { status.textContent = 'No speech was found in this recording.'; transcribe.disabled = false; return; } toast('Transcript saved'); redraw(); return; }
+      let kk = k;
+      if (hasVideoFile && !(k.meta.media && k.meta.media.segments && k.meta.media.segments.length) && ctx.native.files && ctx.native.files.prepare) {
+        status.textContent = 'Getting the sound out of the video.';
+        const p = await ctx.native.files.prepare(k.meta.file.store);
+        await ctx.keeps.update(k.id, { ...(!k.thumb && p.thumb ? { thumb: `data:image/jpeg;base64,${p.thumb}` } : {}), meta: { ...k.meta, durationSecs: Math.round((p.durationMs || 0) / 1000), media: { dir: p.dir, segments: p.segments, durationMs: p.durationMs } } });
+        kk = await ctx.keeps.get(k.id);
+      }
+      if (k.kind === 'voice' || (kk.meta.media && kk.meta.media.segments && kk.meta.media.segments.length)) { const lang = await ctx.repo.prefs.read('voiceLang', ''); const r = await transcribeKeep(ctx, k.id, { language: lang, onStatus: (t) => { status.textContent = t; } }); if (r.empty) { status.textContent = 'No speech was found in this recording.'; transcribe.disabled = false; return; } toast('Transcript saved'); redraw(); return; }
       const vb = await ctx.repo.files.blob(k); if (!vb) throw new Error('The video file is missing.');
       const text = await ctx.ai.transcribe(vb, (k.meta.file && k.meta.file.name) || 'video.mp4');
       if (!text) { status.textContent = 'No speech was found in this video.'; transcribe.disabled = false; return; }
