@@ -13,9 +13,9 @@ export async function transcribeKeep(ctx, id, o = {}) {
   let parts;
   if (media) parts = media.segments.map((sg) => ({ startMs: sg.startMs || 0, name: 'part.m4a', load: async () => { const r = await fetch(ctx.native.mediaFileUrl(sg.path)); if (!r.ok) throw new Error('The saved sound for this video is gone. Choose the video again.'); return r.blob(); } }));
   else {
-    const stored = await ctx.repo.chunks.get(`file:${id}`);
-    if (!stored || !stored.blob) throw new Error('The recording is missing.');
-    parts = [{ startMs: 0, name: (k.meta.file && k.meta.file.name) || 'voice.webm', load: async () => stored.blob }];
+    const stored = await ctx.repo.files.blob(k);
+    if (!stored) throw new Error('The recording is missing.');
+    parts = [{ startMs: 0, name: (k.meta.file && k.meta.file.name) || 'voice.webm', load: async () => stored }];
   }
   const fail = async (e) => { await ctx.keeps.update(id, { meta: { ...k.meta, transcriptError: ctx.errorText ? ctx.errorText(e) : String(e.message || e) } }); throw e; };
   if (o.terms && o.terms.trim()) { try { const old = String(await ctx.repo.prefs.read('voiceTerms', '')); const merged = [...new Set([...old.split(/[,\n;]+/), ...o.terms.split(/[,\n;]+/)].map((x) => x.trim()).filter(Boolean))].slice(0, 80).join(', '); await ctx.repo.prefs.write('voiceTerms', merged); } catch (e) { /* the hint still works for this note */ } }

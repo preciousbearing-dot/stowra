@@ -34,8 +34,9 @@ export function createKeepService(repo) {
       const m = input.media; k.title = k.title || m.name || 'Video';
       k.meta.media = { dir: m.dir || '', segments: m.segments || [], durationMs: m.durationMs || 0 }; k.meta.durationSecs = Math.round((m.durationMs || 0) / 1000);
       if (m.thumb) k.thumb = `data:image/jpeg;base64,${m.thumb}`;
+      if (m.stored && m.stored.name) k.meta.file = { name: m.name || 'video.mp4', mime: m.stored.mime || 'video/mp4', size: m.stored.size || 0, store: m.stored.name };
     }
-    if (input.file) { k.meta.file = { name: input.file.name || 'file', mime: input.file.mime, size: input.file.size || 0 }; await repo.chunks.put({ id: `file:${k.id}`, blob: input.file.blob }); }
+    if (input.file) { const saved = await repo.files.save(k.id, input.file.blob, input.file); k.meta.file = { name: input.file.name || 'file', mime: input.file.mime, size: input.file.size || 0, ...(saved.store ? { store: saved.store } : {}) }; }
     await repo.keeps.put(k);
     changed({ type: 'add', id: k.id });
     return { keep: k, duplicate: false };
@@ -60,8 +61,9 @@ export function createKeepService(repo) {
   const restore = (id) => update(id, { deletedAt: null, archivedAt: null });
 
   async function purge(id) {
+    const gone = await repo.keeps.get(id);
     await repo.keeps.delete(id);
-    await repo.chunks.delete(`file:${id}`);
+    if (gone) await repo.files.remove(gone); else await repo.chunks.delete(`file:${id}`);
     for (const c of await repo.collections.all()) if (c.keepIds.includes(id)) await repo.collections.put({ ...c, keepIds: c.keepIds.filter((x) => x !== id) });
     changed({ type: 'purge', id });
   }

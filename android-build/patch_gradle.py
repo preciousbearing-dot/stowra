@@ -43,6 +43,8 @@ x = open(m).read()
 for perm in ('REQUEST_INSTALL_PACKAGES', 'ACCESS_NETWORK_STATE', 'RECORD_AUDIO', 'MODIFY_AUDIO_SETTINGS'):
     if perm not in x:
         x = sub1(r'<application', '<uses-permission android:name="android.permission.%s" />\n    <application' % perm, x, 'permission ' + perm)
+if 'WRITE_EXTERNAL_STORAGE' not in x:
+    x = sub1(r'<application', '<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />\n    <application', x, 'permission WRITE_EXTERNAL_STORAGE')
 if 'ShareActivity' not in x:
     block = '''<activity android:name=".ShareActivity" android:exported="true" android:label="Stowra" android:theme="@style/StowraOverlay" android:configChanges="orientation|screenSize|keyboardHidden|smallestScreenSize|screenLayout">
             <intent-filter>

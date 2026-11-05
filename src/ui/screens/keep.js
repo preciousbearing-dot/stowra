@@ -6,6 +6,7 @@ import { native } from '../../platform/native.js';
 import { WHY } from '../../capture/why.js';
 import { readImageFile } from '../../capture/images.js';
 import { scrollRow } from '../kit/scrollrow.js';
+import { openViewer, mediaOverlay } from './viewer.js';
 import { relatedSmart } from '../../core/discover.js';
 import { keepCard } from '../kit/cards.js';
 import { rich } from '../kit/rich.js';
@@ -26,6 +27,7 @@ export async function keepScreen(ctx, { id }) {
       h('button', { class: 'iconbtn', style: { position: 'absolute', left: '16px', top: '16px', background: 'rgba(0,0,0,.4)', color: '#fff', border: '0' }, 'aria-label': 'Back', onClick: () => router.back() }, icon('back')),
       h('button', { class: 'iconbtn', style: { position: 'absolute', right: '16px', top: '16px', background: 'rgba(0,0,0,.4)', color: '#fff', border: '0' }, 'aria-label': 'More', onClick: () => more(k) }, icon('more')));
     hero.firstChild.style.setProperty('aspect-ratio', '16 / 10');
+    const mo = mediaOverlay(ctx, k); if (mo) hero.firstChild.append(mo);
     const noAI = !ctx.ai.ready();
     fill(el, hero,
       h('div', { class: 'pad', style: { paddingTop: '24px' } },
@@ -93,6 +95,7 @@ export async function keepScreen(ctx, { id }) {
     menu('Keep', [
       { label: 'Rename', icon: 'edit', run: async () => { const t = await promptBox('Rename', 'Title', k.title); if (t) { await keeps.update(id, { title: t, meta: { ...k.meta, autoTitle: false } }); draw(); } } },
       { label: 'Replace picture', icon: 'image', run: () => pickThumb() },
+      native.files && (k.meta.file && k.meta.file.mime && !k.meta.file.missing) ? { label: 'Save to gallery', icon: 'download', run: async () => { try { const r = await ctx.repo.files.exportToGallery(k); toast(`Saved in ${r.where || 'your gallery'}`); } catch (e) { toast(ctx.errorText(e)); } } } : null,
       k.url ? { label: 'Copy link', icon: 'copy', run: async () => { try { await navigator.clipboard.writeText(k.url); toast('Link copied'); } catch (e) { toast('Could not copy'); } } } : null,
       { label: k.archivedAt ? 'Restore from archive' : 'Archive', icon: 'archive', run: async () => { k.archivedAt ? await keeps.unarchive(id) : await keeps.archive(id); toast(k.archivedAt ? 'Restored' : 'Archived'); router.go('/trove'); } },
       { label: 'Move to bin', icon: 'trash', danger: true, run: async () => { await keeps.trash(id); toast('Moved to the bin', { action: 'Undo', onAction: () => keeps.restore(id) }); router.go('/trove'); } },

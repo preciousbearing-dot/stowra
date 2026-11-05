@@ -4,6 +4,7 @@ const TRACKING = /^(utm_|fbclid|gclid|igshid|si$|feature$|ref$|ref_src$|s$|t$)/i
 
 const SOURCES = [
   { kind: 'youtube', label: 'YouTube', re: /(^|\.)(youtube\.com|youtu\.be|youtube-nocookie\.com)$/ },
+  { kind: 'pinterest', label: 'Pinterest', re: /(^|\.)(pinterest\.[a-z.]+|pin\.it)$/ },
   { kind: 'tiktok', label: 'TikTok', re: /(^|\.)tiktok\.com$/ },
   { kind: 'instagram', label: 'Instagram', re: /(^|\.)instagram\.com$/ },
   { kind: 'x', label: 'X', re: /(^|\.)(x\.com|twitter\.com)$/ },
@@ -55,7 +56,7 @@ export function classify(url) {
 
 /** @param {string} kind @returns {string} plain noun for copy */
 export function nounFor(kind) {
-  return { youtube: 'video', tiktok: 'video', instagram: 'post', x: 'post', github: 'repository', reddit: 'post', pdf: 'PDF', image: 'image', note: 'note' }[kind] || 'link';
+  return { youtube: 'video', tiktok: 'video', instagram: 'post', x: 'post', github: 'repository', reddit: 'post', pdf: 'PDF', image: 'image', pinterest: 'pin', note: 'note' }[kind] || 'link';
 }
 
 /** Filter chips on the Trove. */
@@ -64,7 +65,7 @@ export const FILTERS = [
   { id: 'video', label: 'Videos', kinds: ['youtube', 'tiktok', 'instagram', 'facebook', 'video'] },
   { id: 'article', label: 'Articles', kinds: ['article', 'reddit', 'x', 'linkedin', 'link'] },
   { id: 'repo', label: 'Repos', kinds: ['github'] },
-  { id: 'file', label: 'Files', kinds: ['pdf', 'image'] },
+  { id: 'file', label: 'Files', kinds: ['pdf', 'image', 'pinterest'] },
   { id: 'voice', label: 'Voice', kinds: ['voice'] },
   { id: 'note', label: 'Notes', kinds: ['note'] },
 ];
