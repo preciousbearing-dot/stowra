@@ -1,3 +1,4 @@
+import { createSmart } from './core/vectors.js';
 import { openRepository } from './storage/repository.js';
 import { DEFAULT_PREFS, applyPrefs } from './ui/theme/theme.js';
 import { syncNative } from './ui/theme/native-sync.js';
@@ -51,7 +52,8 @@ export async function startApp(root, repo, persistent) {
   const leave = [];
   const lock = await createLock(repo).load();
   const creations = createCreationService(repo);
-  const ctx = { repo, keeps, creations, lock, pipeline, ai, native, persistent, router: null, errorText: userMessage, onLeave: (f) => leave.push(f) };
+  const smart = createSmart({ repo, keeps, ai }); await smart.load();
+  const ctx = { repo, keeps, creations, lock, pipeline, ai, smart, native, persistent, router: null, errorText: userMessage, onLeave: (f) => leave.push(f) };
   window.__stowra = ctx;
   const nav = createNav({ go: (p) => ctx.router.go(p), onAdd: () => openCapture(ctx) });
   root.append(view, nav.el);

@@ -2,6 +2,7 @@ import { h, fill } from '../kit/dom.js';
 import { icon } from '../kit/icons.js';
 import { keepCard, emptyState } from '../kit/cards.js';
 import { toast, sheet } from '../kit/overlay.js';
+import { suggestSpacesAI } from '../../ai/spaces.js';
 import { rediscoverPicks, weekly, heuristicSpaces, laptopItems, taskList, SCAN_WARNING } from '../../core/discover.js';
 
 const head = (ctx, title) => h('div', { class: 'top' }, h('button', { class: 'iconbtn plain', 'aria-label': 'Back', onClick: () => ctx.router.back() }, icon('back')), h('h1', { class: 'title', style: { fontSize: '26px' }, text: title }), h('span', { style: { width: '44px' } }));
@@ -33,9 +34,18 @@ export async function laptopScreen(ctx) {
 export async function suggestSpaces(ctx) {
   const keeps = await ctx.keeps.list({}); const cols = await ctx.keeps.collections();
   const s = sheet({ title: 'Suggested Spaces' });
-  let sug = heuristicSpaces(keeps, new Set(cols.map((c) => c.name.toLowerCase())));
+  const existing = new Set(cols.map((c) => c.name.toLowerCase()));
+  let sug = heuristicSpaces(keeps, existing);
+  let asking = false;
+  const ask = async () => {
+    asking = true; draw();
+    try { sug = await suggestSpacesAI({ ai: ctx.ai, smart: ctx.smart, keeps, existing }); } catch (e) { toast('Could not ask just now'); }
+    asking = false; draw();
+  };
+  const smartOn = ctx.smart && ctx.smart.on;
   const draw = () => fill(s.body, h('p', { class: 'sheet-text', text: 'Groups Stowra noticed. Approve the ones you want. Approved Spaces become Collections.' }),
+    h('button', { class: 'btn ghost small', style: { margin: '0 0 12px' }, disabled: asking, text: asking ? 'Thinking...' : (smartOn ? 'Find groups by meaning and name them' : 'Name these groups with AI'), onClick: ask }),
     sug.length ? sug.map((x, i) => h('div', { class: 'notice', style: { margin: '0 0 8px' } }, h('div', { style: { color: 'var(--tx)', fontWeight: '600' }, text: x.name }), h('div', { class: 'hint', text: x.reason }),
-      h('div', { class: 'row-btns', style: { marginTop: '8px' } }, h('button', { class: 'btn ghost small', text: 'Dismiss', onClick: () => { sug.splice(i, 1); draw(); } }), h('button', { class: 'btn small', text: 'Approve', onClick: async () => { const c = await ctx.keeps.addCollection(x.name); await ctx.keeps.addToCollection(c.id, x.keepIds); sug.splice(i, 1); toast(`Created ${x.name}`); draw(); } })))) : h('div', { class: 'empty', style: { padding: '24px 0' }, text: 'No suggestions right now. Tag a few Keeps and check again.' }));
+      h('div', { class: 'row-btns', style: { marginTop: '8px' } }, h('button', { class: 'btn ghost small', text: 'Dismiss', onClick: () => { sug.splice(i, 1); draw(); } }), h('button', { class: 'btn small', text: 'Approve', onClick: async () => { const c = await ctx.keeps.addCollection(x.name); await ctx.keeps.addToCollection(c.id, x.keepIds); sug.splice(i, 1); toast(`Created ${x.name}`); draw(); } })))) : h('div', { class: 'empty', style: { padding: '24px 0' }, text: 'No suggestions right now. Save a few more Keeps, or turn on Smart search in Settings so Stowra can group by meaning.' }));
   draw();
 }

@@ -5,7 +5,7 @@ import { menu, sheet, confirmBox, promptBox, toast } from '../kit/overlay.js';
 import { native } from '../../platform/native.js';
 import { WHY } from '../../capture/why.js';
 import { readImageFile } from '../../capture/images.js';
-import { relatedTo } from '../../core/discover.js';
+import { relatedSmart } from '../../core/discover.js';
 import { keepCard } from '../kit/cards.js';
 import { rich } from '../kit/rich.js';
 import { transcriptView, noTranscriptView, studyView, analysisCard, voiceCard, imageReadCard } from './keep-extras.js';
@@ -20,7 +20,7 @@ export async function keepScreen(ctx, { id }) {
     const k = await keeps.get(id);
     if (!k) return fill(el, h('div', { class: 'empty' }, h('div', { class: 'h2', text: 'This Keep is gone' }), h('button', { class: 'btn small', text: 'Back to Trove', onClick: () => router.go('/trove') })));
     const cols = await keeps.collectionsOf(id);
-    const related = relatedTo(k, await keeps.list({}));
+    const related = await relatedSmart(k, await keeps.list({}), ctx.smart);
     const hero = h('div', { style: { position: 'relative' } }, cover(k),
       h('button', { class: 'iconbtn', style: { position: 'absolute', left: '16px', top: '16px', background: 'rgba(0,0,0,.4)', color: '#fff', border: '0' }, 'aria-label': 'Back', onClick: () => router.back() }, icon('back')),
       h('button', { class: 'iconbtn', style: { position: 'absolute', right: '16px', top: '16px', background: 'rgba(0,0,0,.4)', color: '#fff', border: '0' }, 'aria-label': 'More', onClick: () => more(k) }, icon('more')));

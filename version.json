@@ -1,11 +1,10 @@
 {
-  "version": "0.4.0",
+  "version": "0.5.0",
   "min": "0.0.0",
   "notes": [
-    "New voice notes. Record in Stowra, then turn it into text with your Groq key (most accurate) or your Gemini key. Names from your own Keeps and tags help it spell things right, and you can pick the language.",
-    "Voice notes keep the original wording and a tidied version side by side, with a short summary and any to-dos you said out loud.",
-    "Text inside pictures is now read on your phone, with no internet. Tap Read this picture with AI to get a description of a screenshot.",
-    "Long videos now work. Pick a video and Stowra cuts out its sound on the phone, then transcribes it in parts and joins the times.",
-    "Fixed a rare problem where tapping Back could skip a screen."
+    "New Smart search (Settings, Smart search). Turn it on and you can find a Keep by what it means, not only its words. It uses your own free Gemini key and is off until you switch it on.",
+    "The Keep text is sent to Gemini once to work out its meaning. Pictures and files are never sent. The results stay on your phone and you can delete them any time.",
+    "Related Keeps now match by meaning. Suggested Spaces can group your Keeps by meaning and give each group a name and a reason. You still approve every Space.",
+    "Search shows normal results straight away, then adds the ones found by meaning."
   ]
 }
