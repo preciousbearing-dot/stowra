@@ -3,6 +3,7 @@ import { icon } from '../kit/icons.js';
 import { keepCard, emptyState } from '../kit/cards.js';
 import { FILTERS } from '../../capture/classify.js';
 import { menu, confirmBox, promptBox, toast } from '../kit/overlay.js';
+import { scrollRow } from '../kit/scrollrow.js';
 import { weekly } from '../../core/discover.js';
 import { advancedPanel } from './trove-charts.js';
 
@@ -33,7 +34,7 @@ export function troveScreen(ctx) {
       all.length && state.view === 'active' ? h('button', { class: 'hero sreview', onClick: () => router.go('/rediscover') }, h('span', { class: 'lbl', text: waiting ? `${waiting} waiting to be read` : 'Your Trove' }), h('span', { class: 'big', text: `${all.length} ${all.length === 1 ? 'Keep' : 'Keeps'}` }), h('span', { class: 'lbl', text: 'Tap to rediscover something' })) : null,
       showReview ? h('button', { class: 'notice', style: { width: 'calc(100% - 48px)', textAlign: 'left' }, onClick: () => router.go('/review') }, h('b', { text: `You kept ${wk.count} things this week. ` }), 'See your week') : null,
       state.view !== 'active' ? h('div', { class: 'notice', text: state.view === 'bin' ? 'Items here are deleted for good after 30 days.' : 'Archived Keeps are hidden from your Trove and still searchable.' }) : null,
-      h('div', { class: 'chips', role: 'tablist' }, FILTERS.map((f) => h('button', { class: 'chip' + (state.filter === f.id ? ' on' : ''), text: f.label, onClick: () => { state.filter = f.id; draw(); } }))),
+      scrollRow(h('div', { class: 'chips', role: 'tablist' }, FILTERS.map((f) => h('button', { class: 'chip' + (state.filter === f.id ? ' on' : ''), text: f.label, onClick: () => { state.filter = f.id; draw(); } })))),
       items.length ? grid : (all.length || state.view !== 'active' ? emptyState('Nothing here', state.view === 'bin' ? 'The bin is empty.' : state.view === 'archive' ? 'No archived Keeps.' : 'No Keeps match this filter.') : emptyState('Your Trove is empty', 'Share a video, post or page to Stowra from any app, or tap the plus to paste a link.')));
     bar();
   }

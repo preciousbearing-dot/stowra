@@ -1,6 +1,6 @@
 /* App shell: pages, nav, sheets, toasts. Colours come only from tokens. */
 #view { position: absolute; inset: 0 0 var(--navh, 0px) 0; overflow: hidden; }
-.page { position: absolute; inset: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0 0 32px; opacity: 0; transition: opacity .22s ease, transform .26s cubic-bezier(.2,.8,.2,1); }
+.page { position: absolute; inset: 0; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; padding: 0 0 32px; opacity: 0; transition: opacity .22s ease, transform .26s cubic-bezier(.2,.8,.2,1); }
 .page.from-right { transform: translateX(24px); }
 .page.in { opacity: 1; transform: none; }
 .pad { padding-left: 24px; padding-right: 24px; }
@@ -89,6 +89,14 @@ textarea.field { height: 96px; padding: 12px 16px; resize: none; }
 .row { display: flex; align-items: center; gap: 14px; padding: 14px 24px; border: 0; border-bottom: 1px solid var(--ln); background: transparent; color: var(--tx); width: 100%; text-align: left; font-size: 16px; }
 .row .grow { flex: 1; min-width: 0; } .row .rs { color: var(--mu); font-size: 14px; }
 .seg { display: flex; gap: 4px; padding: 8px 24px 0; }
+.hrow { overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; scrollbar-width: none; scroll-snap-type: x proximity; touch-action: pan-x pan-y; -webkit-overflow-scrolling: touch; max-width: 100%; box-sizing: border-box; }
+.hrow::-webkit-scrollbar { display: none; }
+.hrow > * { flex: none; white-space: nowrap; scroll-snap-align: start; }
+.hrow.more-r { -webkit-mask-image: linear-gradient(to right, #000 0, #000 calc(100% - 44px), transparent 100%); mask-image: linear-gradient(to right, #000 0, #000 calc(100% - 44px), transparent 100%); }
+.hrow.more-l { -webkit-mask-image: linear-gradient(to right, transparent 0, #000 44px, #000 100%); mask-image: linear-gradient(to right, transparent 0, #000 44px, #000 100%); }
+.hrow.more-l.more-r { -webkit-mask-image: linear-gradient(to right, transparent 0, #000 44px, #000 calc(100% - 44px), transparent 100%); mask-image: linear-gradient(to right, transparent 0, #000 44px, #000 calc(100% - 44px), transparent 100%); }
+.hrow.pad-h { padding-left: 24px; padding-right: 24px; }
+.hrow.sheet-row { margin: 12px -24px 0; padding: 0 24px; display: flex; gap: 8px; }
 .seg button { height: 44px; border-radius: 22px; padding: 0 18px; border: 0; background: transparent; color: var(--t2); font-size: 14px; font-weight: 500; }
 .seg button.on { background: var(--track); color: var(--tx); }
 .sect { padding: 24px 24px 0; }

@@ -3,6 +3,7 @@ import { icon } from '../kit/icons.js';
 import { sheet, toast } from '../kit/overlay.js';
 import { WHY } from '../../capture/why.js';
 import { firstUrl } from '../../capture/classify.js';
+import { scrollRow } from '../kit/scrollrow.js';
 import { openVoice } from './voice.js';
 
 /** Paste a link, write a note, or pick a file. The Keep is saved the moment Save is tapped. */
@@ -27,9 +28,9 @@ export function openCapture(ctx, prefill = '') {
       else { toast('Kept in your Trove', { action: 'Open', onAction: () => ctx.router.go(`/keep/${keep.id}`) }); ctx.pipeline.run(keep.id).catch(() => {}); }
     } catch (e) { toast(ctx.errorText(e)); save.disabled = false; }
   } });
-  fill(s.body, input, h('div', { style: { display: 'flex', gap: '8px', marginTop: '12px' } },
+  fill(s.body, input, scrollRow(h('div', { class: 'sheet-row' },
     h('button', { class: 'chip', onClick: async () => { try { const t = await navigator.clipboard.readText(); if (t) { input.value = t; } } catch (e) { toast('Long press the box and choose Paste'); } } }, icon('link', 16), 'Paste'),
-    h('button', { class: 'chip', onClick: () => picker.click() }, icon('file', 16), ctx.native.canPickVideo ? 'Photo or PDF' : 'Photo, video or PDF'), ctx.native.canPickVideo ? h('button', { class: 'chip', onClick: async () => { try { toast('Choose a video'); const m = await ctx.native.pickVideo(); if (m.cancelled) return; s.close(); const { keep } = await ctx.keeps.add({ text: '', why, media: m }); ctx.pipeline.run(keep.id).catch(() => {}); toast('Video kept. Open it to read what is said', { action: 'Open', onAction: () => ctx.router.go(`/keep/${keep.id}`) }); } catch (e) { toast(ctx.errorText(e)); } } }, icon('play', 16), 'Video') : null, h('button', { class: 'chip', onClick: () => { s.close(); openVoice(ctx); } }, icon('mic', 16), 'Voice note'), picker), fileLbl,
+    h('button', { class: 'chip', onClick: () => { s.close(); openVoice(ctx); } }, icon('mic', 16), 'Voice note'), h('button', { class: 'chip', onClick: () => picker.click() }, icon('file', 16), ctx.native.canPickVideo ? 'Photo or PDF' : 'Photo, video or PDF'), ctx.native.canPickVideo ? h('button', { class: 'chip', onClick: async () => { try { toast('Choose a video'); const m = await ctx.native.pickVideo(); if (m.cancelled) return; s.close(); const { keep } = await ctx.keeps.add({ text: '', why, media: m }); ctx.pipeline.run(keep.id).catch(() => {}); toast('Video kept. Open it to read what is said', { action: 'Open', onAction: () => ctx.router.go(`/keep/${keep.id}`) }); } catch (e) { toast(ctx.errorText(e)); } } }, icon('play', 16), 'Video') : null, picker)), fileLbl,
     h('div', { class: 'lbl-strong', text: 'Why did you save this?' }), chips, own, save);
   setTimeout(() => input.focus(), 280);
   return s;

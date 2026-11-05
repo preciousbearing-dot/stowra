@@ -5,6 +5,7 @@ import { menu, sheet, confirmBox, promptBox, toast } from '../kit/overlay.js';
 import { native } from '../../platform/native.js';
 import { WHY } from '../../capture/why.js';
 import { readImageFile } from '../../capture/images.js';
+import { scrollRow } from '../kit/scrollrow.js';
 import { relatedSmart } from '../../core/discover.js';
 import { keepCard } from '../kit/cards.js';
 import { rich } from '../kit/rich.js';
@@ -34,7 +35,7 @@ export async function keepScreen(ctx, { id }) {
         h('div', { class: 'cs', style: { marginTop: '16px', fontSize: '14px', gap: '8px' } }, statusDot(k), h('b', { text: STATUS_LABEL[k.status] }), h('span', { text: k.error || statusNote(k) }),
           ['saved', 'failed', 'attention', 'partial', 'ready'].includes(k.status) && k.url ? h('button', { class: 'chip', style: { marginLeft: 'auto', height: '36px' }, onClick: async () => { toast('Reading again'); await ctx.pipeline.run(id); }, text: k.status === 'ready' ? 'Read again' : 'Try again' }) : null),
         k.status === 'attention' || (k.kind === 'tiktok' || k.kind === 'instagram') ? h('div', { class: 'notice', style: { margin: '12px 0 0' }, text: `${k.source} shares no cover or caption. Paste the caption into Notes, or add a screen recording, and Stowra can read it.` }) : null,
-        h('div', { class: 'seg', style: { padding: '24px 0 0' } }, [['overview', 'Overview'], ['reading', 'Reading'], ...(k.meta.hasTranscript || k.kind === 'youtube' || k.kind === 'video' || k.kind === 'voice' ? [['transcript', 'Transcript'], ['study', 'Study']] : []), ['notes', 'Notes']].map(([t, l]) => h('button', { class: tab === t ? 'on' : '', text: l, onClick: () => { tab = t; draw(); } }))),
+        scrollRow(h('div', { class: 'seg', style: { marginTop: '24px' } }, [['overview', 'Overview'], ['reading', 'Reading'], ...(k.meta.hasTranscript || k.kind === 'youtube' || k.kind === 'video' || k.kind === 'voice' ? [['transcript', 'Transcript'], ['study', 'Study']] : []), ['notes', 'Notes']].map(([t, l]) => h('button', { class: tab === t ? 'on' : '', text: l, onClick: () => { tab = t; draw(); } })))),
         tab === 'overview' ? [k.kind === 'voice' ? voiceCard(k, ctx) : null, k.kind === 'image' ? imageReadCard(k, ctx, draw) : null, analysisCard(k, ctx, (t) => { tab = t; draw(); }), overview(k, noAI)] : tab === 'reading' ? reading(k) : tab === 'transcript' ? (k.meta.hasTranscript ? transcriptView(k) : noTranscriptView(k, ctx, draw)) : tab === 'study' ? studyView(k, ctx, draw) : notes(k),
         h('div', { style: { marginTop: '24px', display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' } },
           k.tags.map((t) => h('button', { class: 'chip', text: t, onClick: () => removeTag(k, t), 'aria-label': `Remove tag ${t}` })),
