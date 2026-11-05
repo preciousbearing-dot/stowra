@@ -7,7 +7,7 @@ import { creationsScreen, creationScreen } from './screens/creations.js';
 import { rediscoverScreen, reviewScreen, laptopScreen } from './screens/discover.js';
 import { dataScreen, privacyScreen } from './screens/data.js';
 import { aboutScreen } from './screens/about.js';
-import { settingsScreen, aiSettingsScreen, lookSettingsScreen } from './screens/settings.js';
+import { settingsScreen, aiSettingsScreen, smartSettingsScreen, lookSettingsScreen } from './screens/settings.js';
 
 /** Route table. A route with bare:true hides the bottom navigation. */
 export function buildRoutes(ctx) {
@@ -31,6 +31,7 @@ export function buildRoutes(ctx) {
     '/settings/privacy': { tab: 'settings', bare: true, render: () => privacyScreen(ctx) },
     '/settings/about': { tab: 'settings', bare: true, render: () => aboutScreen(ctx) },
     '/settings/look': { tab: 'settings', bare: true, render: () => lookSettingsScreen(ctx) },
+    '/settings/smart': { tab: 'settings', bare: true, render: () => smartSettingsScreen(ctx) },
     '/settings/ai': { tab: 'settings', bare: true, render: () => aiSettingsScreen(ctx) },
   };
 }

@@ -17,6 +17,17 @@ export function relatedTo(keep, all, n = 3) {
   return search(buildIndex(all.filter((k) => k.id !== keep.id && !k.deletedAt)), q).filter((r) => r.score >= 4).slice(0, n).map((r) => r.keep);
 }
 
+/** Related Keeps by meaning when Smart search has indexed them, topped up with shared words. Falls back to words alone. @param {any} keep @param {any[]} all @param {any} [smart] */
+export async function relatedSmart(keep, all, smart, n = 3) {
+  const words = relatedTo(keep, all, n);
+  if (!smart || !smart.on) return words;
+  let sem = [];
+  try { sem = (await smart.similar(keep, all.filter((k) => !k.deletedAt && !k.archivedAt), n)).map((r) => r.keep); } catch (e) { sem = []; }
+  const seen = new Set(); const out = [];
+  for (const k of [...sem, ...words]) { if (!seen.has(k.id)) { seen.add(k.id); out.push(k); } }
+  return out.slice(0, n);
+}
+
 /** A plain summary of the last seven days. @param {any[]} keeps */
 export function weekly(keeps, now = Date.now()) {
   const week = keeps.filter((k) => !k.deletedAt && now - k.createdAt <= 7 * DAY);

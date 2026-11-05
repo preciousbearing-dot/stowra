@@ -202,5 +202,32 @@ export function createAi({ repo, keeps, fetchImpl }) {
     return { description: String((p && p.description) || (p ? '' : raw)), text: String((p && p.text) || ''), kind: String((p && p.kind) || 'other'), provider: id };
   }
 
-  return { init, ready, connected, connect, disconnect, setActive, setModel, transcribe, transcribeFull, readImage, loadModels, chat, summarise, get config() { return cfg; }, providers: PROVIDERS, hasKey: (id) => Boolean(keys[id]) };
+  /**
+   * Turn texts into meaning vectors with Gemini (free tier). Sends the text to Google, so callers only use it after the person turned Smart search on.
+   * @param {string[]} texts @param {'RETRIEVAL_DOCUMENT'|'RETRIEVAL_QUERY'} [taskType] @param {AbortSignal} [signal]
+   * @returns {Promise<number[][]>} unit-length vectors, one per text
+   */
+  async function embed(texts, taskType = 'RETRIEVAL_DOCUMENT', signal, tries = 3) {
+    if (!keys.gemini) throw new UserError('Smart search needs a Gemini key. Add one in Settings, AI connection.', { code: 'no_gemini' });
+    const out = [];
+    for (let i = 0; i < texts.length; i += 20) {
+      const batch = texts.slice(i, i + 20);
+      const body = { requests: batch.map((t) => ({ model: 'models/gemini-embedding-001', content: { parts: [{ text: String(t).slice(0, 6000) }] }, taskType, outputDimensionality: 768 })) };
+      let r;
+      for (let n = 0; n < tries; n++) {
+        r = await doFetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:batchEmbedContents', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': keys.gemini }, body: JSON.stringify(body), signal });
+        if (r.status !== 429 && r.status < 500) break;
+        if (n < tries - 1) await sleep(3000 * (n + 1), signal);
+      }
+      if (r.status === 401 || r.status === 403) throw new ProviderError('Gemini refused the key.', { code: 'key' });
+      if (r.status === 429) throw new ProviderError('Gemini says you have used the free limit for now. Smart search will carry on later.', { code: '429' });
+      if (!r.ok) throw new ProviderError(`Gemini could not index this (HTTP ${r.status}).`, { code: String(r.status) });
+      const j = await r.json(); const list = j.embeddings || [];
+      if (list.length !== batch.length) throw new ProviderError('Gemini sent back an unexpected answer.', { code: 'shape' });
+      for (const e of list) { const v = e.values || []; let n2 = 0; for (const x of v) n2 += x * x; n2 = Math.sqrt(n2) || 1; out.push(v.map((x) => Math.round((x / n2) * 1e5) / 1e5)); }
+    }
+    return out;
+  }
+
+  return { init, ready, connected, connect, disconnect, setActive, setModel, transcribe, transcribeFull, readImage, embed, loadModels, chat, summarise, get config() { return cfg; }, providers: PROVIDERS, hasKey: (id) => Boolean(keys[id]) };
 }
