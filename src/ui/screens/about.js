@@ -4,6 +4,7 @@ import { toast } from '../kit/overlay.js';
 import { native } from '../../platform/native.js';
 import { checkForUpdate, APK_URL } from '../../platform/updater.js';
 import { VERSION } from '../../../version.js';
+import { sizeText } from '../kit/bytes.js';
 
 const head = (ctx, title) => h('div', { class: 'top' }, h('button', { class: 'iconbtn plain', 'aria-label': 'Back', onClick: () => ctx.router.back() }, icon('back')), h('h1', { class: 'title', style: { fontSize: '26px' }, text: title }), h('span', { style: { width: '44px' } }));
 
@@ -26,7 +27,7 @@ export async function aboutScreen(ctx) {
     if (res.status === 'current') return h('div', { class: 'notice', text: `You have the latest version, ${VERSION}.` });
     const notes = h('ul', { style: { margin: '8px 0 0', paddingLeft: '18px' } }, (res.notes || []).map((n) => h('li', { text: n })));
     const prog = dl && dl.state !== 'idle' ? h('div', {}, h('div', { class: 'prog' }, h('div', { style: { width: `${dl.pct || 0}%` } })), h('p', { class: 'hint', text: dl.state === 'waiting' ? 'Waiting for a connection' : dl.state === 'error' ? dl.error || 'The download stopped.' : dl.state === 'ready' ? 'Downloaded.' : `Downloading, ${dl.pct || 0}%` })) : null;
-    return h('div', { class: 'notice' }, h('b', { text: `Version ${res.latest} is ready` }), res.mandatory ? h('p', { class: 'hint', text: 'This update is required for Stowra to keep working.' }) : null, notes, prog,
+    return h('div', { class: 'notice' }, h('b', { text: `Version ${res.latest} is ready` }), h('p', { class: 'hint', style: { margin: '4px 0 0' }, 'data-update-size': res.size ? String(res.size) : '', text: res.size ? `Download size: ${sizeText(res.size)}` : 'Download size not shown' }), res.mandatory ? h('p', { class: 'hint', text: 'This update is required for Stowra to keep working.' }) : null, notes, prog,
       h('button', { class: 'btn', style: { width: '100%', marginTop: '14px' }, text: dl && dl.state === 'ready' ? 'Install now' : 'Download and install', onClick: install }));
   }
 
@@ -48,5 +49,6 @@ export async function aboutScreen(ctx) {
         ...[['Private by design', 'Your Keeps stay on this phone. There is no account and no server.'], ['AI is optional', 'Saving, searching and your library work with no AI and no internet. Summaries and Kiko need your own key.'], ['Instagram and TikTok', 'These apps share only a link. Stowra keeps the link and source. For the content, paste the caption or add a screen recording.'], ['Pictures', 'A picture goes to an AI provider only when you tap to send it.']].map(([t, b]) => h('div', { style: { padding: '12px 0', borderBottom: '1px solid var(--ln)' } }, h('div', { style: { fontWeight: '600' }, text: t }), h('div', { class: 'sub', text: b })))));
   }
   draw();
+  if (ctx.pendingUpdate) { const p = ctx.pendingUpdate; ctx.pendingUpdate = null; res = p.res; draw(); if (p.start) install(); }
   return el;
 }

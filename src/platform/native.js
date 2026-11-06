@@ -104,6 +104,10 @@ export const native = {
         try { return await M.downloadFile({ url: o.url, headers: o.headers || {}, id: o.id, chunkBytes: o.chunk ? 9 * 1024 * 1024 : 0 }); } finally { if (sub && sub.remove) sub.remove(); }
       },
       cancel: (id) => M.cancelDownload({ id }),
+      /** How big an address is, in bytes, without downloading it. -1 when the site does not say. @returns {Promise<{size: number, mime: string}>} */
+      probe: (url, headers) => M.probeFile({ url, headers: headers || {} }),
+      /** A cover picture (base64 JPEG) from a stored video. @returns {Promise<{thumb: string, durationMs: number}>} */
+      frame: (name) => M.videoFrame({ name }),
       /** Cut the sound out of a stored video (for transcribing). */
       prepare: (name) => M.prepareStored({ name }),
       /** Read text on pictures taken through a stored video. @returns {Promise<{frames: {atMs: number, text: string}[], durationMs: number}>} */

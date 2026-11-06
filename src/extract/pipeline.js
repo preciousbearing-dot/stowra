@@ -25,6 +25,7 @@ export function createPipeline({ keeps, extractors, tools }) {
       // A title the user set stays; a generated one (the link itself) is replaced.
       if (r.title && (!cur.title || cur.title === cur.url || cur.title === (cur.meta.host || '') || /^https?:\/\//.test(cur.title) || cur.title.length < 4 || cur.meta.autoTitle !== false)) { patch.title = r.title; patch.meta.autoTitle = true; }
       await keeps.update(id, patch);
+      if (!patch.thumb && !cur.thumb && tools.thumbs) tools.thumbs.ensure(id).catch(() => {});
     } catch (e) {
       const offline = e instanceof NetworkError;
       await keeps.update(id, { status: offline ? STATUS.ATTENTION : STATUS.FAILED, error: userMessage(e) });

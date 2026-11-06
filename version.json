@@ -1,12 +1,10 @@
 {
-  "version": "0.7.0",
+  "version": "0.7.1",
   "min": "0.0.0",
   "notes": [
-    "New Download video on YouTube, Instagram, TikTok and Pinterest video Keeps. The video saves on your phone, plays in the app, and can go to your gallery. Pick it up from the Overview tab.",
-    "If a site blocks the direct download, Stowra can use a helper service as a fallback. Settings, Video downloads shows what a helper can see, lets you turn it off, and lets you add your own.",
-    "Repository links are now found in descriptions, captions, transcripts and notes, including links that are spoken out loud. Open one, or Keep it as its own Keep.",
-    "Scan the video for links reads text shown on screen, like a repository name or a command, without sending anything off your phone.",
-    "New Guide tab on videos. It turns what the video says and shows into steps to follow, with commands you can copy and boxes to tick off.",
-    "A video you downloaded can be transcribed from its sound when it has no captions. Instagram reels now keep their caption and cover."
+    "Every video now gets a cover picture, so you can recognise a Keep at a glance. Videos you download or add from your gallery get one automatically, and older videos get theirs shortly after you open the app.",
+    "The Download video card now shows how big the video is before you tap, so you can judge your data use.",
+    "When an update is released, a pop-up appears about 10 seconds after you open Stowra, with the download size. Choose Update now or Not now.",
+    "The buttons under Video saved on this phone (Watch, Save to gallery, Remove the file) now scroll sideways so none are hidden."
   ]
 }

@@ -1,4 +1,4 @@
-import { downloadVideo, DEFAULT_DL } from '../extract/download.js';
+import { downloadVideo, videoSize, DEFAULT_DL } from '../extract/download.js';
 
 /**
  * Video downloads that carry on while the app is open, one per Keep, with progress the Keep screen can show.
@@ -7,6 +7,7 @@ import { downloadVideo, DEFAULT_DL } from '../extract/download.js';
 export function createDownloads(ctx) {
   /** @type {Map<string, any>} */ const jobs = new Map();
   const subs = new Set();
+  /** @type {Map<string, Promise<number>>} */ const sizes = new Map();
   const emit = (id) => subs.forEach((f) => f(id, jobs.get(id)));
   const set = (id, patch) => { jobs.set(id, { ...(jobs.get(id) || {}), ...patch }); emit(id); };
   return {
@@ -29,12 +30,20 @@ export function createDownloads(ctx) {
         const safe = String(fresh.title || 'video').replace(/[\\/:*?"<>|]/g, ' ').trim().slice(0, 80) || 'video';
         const ext = (r.name.match(/\.[A-Za-z0-9]{1,5}$/) || ['.mp4'])[0];
         await ctx.keeps.update(id, { meta: { ...fresh.meta, file: { name: `${safe}${ext}`, mime: r.mime, size: r.size, store: r.name }, download: { via: r.via, helper: r.helper, at: Date.now(), size: r.size } } });
+        if (ctx.thumbs) await ctx.thumbs.ensure(id);
         set(id, { state: 'done', pct: 100, via: r.via, helper: r.helper, size: r.size, note: 'Saved on this phone' });
       } catch (e) {
         const stopped = e && (e.code === 'stopped' || /stopped/.test(String(e.message)));
         set(id, { state: stopped ? 'idle' : 'failed', error: stopped ? '' : String((e && e.message) || e), note: stopped ? 'Download stopped' : '' });
       }
       return jobs.get(id);
+    },
+    /** The size the video will have, found before downloading. Remembered for the session so the card does not ask twice. @param {string} id @returns {Promise<number>} bytes, 0 when unknown */
+    async size(id) {
+      if (sizes.has(id)) return sizes.get(id);
+      const k = await ctx.keeps.get(id); if (!k) return 0;
+      const p = Promise.resolve().then(async () => videoSize(k, { native: ctx.native, cfg: await this.settings() })).then((r) => r.size).catch(() => 0);
+      sizes.set(id, p); const n = await p; if (!n) sizes.delete(id); return n;
     },
     /** Delete the video file but keep the Keep. @param {string} id */
     async removeFile(id) {
