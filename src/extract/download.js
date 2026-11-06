@@ -110,3 +110,21 @@ export async function downloadVideo(k, o) {
   }
   const e = new Error(reasons.join(' ')); e.reasons = reasons; throw e;
 }
+
+/**
+ * How big the video will be, in bytes, found before anything is saved. Tries each way in turn and uses the first that says.
+ * Returns size 0 when no site tells the size, which the card shows as unknown.
+ * @param {any} k @param {{native: any, cfg: any}} o @returns {Promise<{size: number, via: string}>}
+ */
+export async function videoSize(k, o) {
+  const files = o.native && o.native.files;
+  if (!files || !files.probe) return { size: 0, via: '' };
+  for (const s of plan(k, o.cfg || DEFAULT_DL)) {
+    try {
+      const r = await s.run(k);
+      const p = await files.probe(r.url, r.headers);
+      if (p && Number(p.size) > 0) return { size: Number(p.size), via: s.label };
+    } catch (e) { /* try the next way */ }
+  }
+  return { size: 0, via: '' };
+}

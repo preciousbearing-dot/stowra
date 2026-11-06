@@ -426,6 +426,64 @@ public class StowraMediaPlugin extends Plugin {
     @PluginMethod
     public void cancelDownload(PluginCall call) { String id = call.getString("id"); if (id != null) stopped.put(id, true); call.resolve(); }
 
+    /** Asks how big a download will be without saving anything. Size is -1 when the site does not say. */
+    @PluginMethod
+    public void probeFile(final PluginCall call) {
+        final String url = call.getString("url");
+        final JSObject headers = call.getObject("headers", new JSObject());
+        if (url == null || !url.startsWith("http")) { call.reject("That is not a download address."); return; }
+        new Thread(new Runnable() {
+            @Override public void run() {
+                try {
+                    HttpURLConnection con = openFollowing(url, headers, "bytes=0-0");
+                    int code = con.getResponseCode();
+                    if (code >= 400) { call.reject("The site refused (HTTP " + code + ").", String.valueOf(code)); return; }
+                    String mime = con.getContentType();
+                    String lower = mime == null ? "" : mime.toLowerCase();
+                    if (lower.startsWith("text/") || lower.contains("json") || lower.contains("html")) { call.reject("The site sent a web page, not the file.", "page"); return; }
+                    long total = -1;
+                    String cr = con.getHeaderField("Content-Range");
+                    if (code == 206 && cr != null && cr.contains("/")) { try { total = Long.parseLong(cr.substring(cr.lastIndexOf('/') + 1).trim()); } catch (Exception ignored) { } }
+                    else if (code == 200) total = con.getContentLengthLong();
+                    con.disconnect();
+                    JSObject r = new JSObject(); r.put("size", total); r.put("mime", mime == null ? "" : mime.split(";")[0].trim());
+                    call.resolve(r);
+                } catch (Throwable t) { call.reject("Could not check the size: " + t.getMessage(), "network"); }
+            }
+        }).start();
+    }
+
+    /** A cover picture from a video in the app folder. Tries a few moments in case the first frame is black or unreadable. */
+    @PluginMethod
+    public void videoFrame(final PluginCall call) {
+        final File f = storedFile(getContext(), call.getString("name"));
+        if (f == null || !f.exists()) { call.reject("That video is not on this phone any more."); return; }
+        new Thread(new Runnable() {
+            @Override public void run() {
+                MediaMetadataRetriever mmr = new MediaMetadataRetriever();
+                try {
+                    mmr.setDataSource(f.getAbsolutePath());
+                    String d = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
+                    long dur = d == null ? 0 : Long.parseLong(d);
+                    long[] tries = new long[] { Math.min(1000L, dur / 4), dur / 2, 0L };
+                    Bitmap frame = null;
+                    for (long ms : tries) {
+                        try { frame = mmr.getFrameAtTime(ms * 1000L, MediaMetadataRetriever.OPTION_CLOSEST_SYNC); } catch (Throwable ignored) { frame = null; }
+                        if (frame != null) break;
+                    }
+                    if (frame == null) { call.reject("No picture could be read from this video."); return; }
+                    int w = 640; int h = Math.max(1, Math.round(frame.getHeight() * (w / (float) frame.getWidth())));
+                    Bitmap small = Bitmap.createScaledBitmap(frame, w, h, true);
+                    ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                    small.compress(Bitmap.CompressFormat.JPEG, 80, bos);
+                    JSObject r = new JSObject(); r.put("thumb", Base64.encodeToString(bos.toByteArray(), Base64.NO_WRAP)); r.put("durationMs", dur);
+                    call.resolve(r);
+                } catch (Throwable t) { call.reject("Could not read this video: " + t.getMessage()); }
+                finally { try { mmr.release(); } catch (Throwable ignored) { } }
+            }
+        }).start();
+    }
+
     /** Cuts the sound out of a video already in the app folder, so it can be transcribed, and takes a cover frame. */
     @PluginMethod
     public void prepareStored(final PluginCall call) {

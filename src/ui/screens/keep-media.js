@@ -6,8 +6,10 @@ import { linksOf, dedupeFrames } from '../../ai/links.js';
 import { guideKeep } from '../../ai/guide.js';
 import { transcriptOf } from '../../ai/study.js';
 import { mediaKind, openViewer } from './viewer.js';
+import { scrollRow } from '../kit/scrollrow.js';
+import { sizeText } from '../kit/bytes.js';
 
-const mb = (n) => (n >= 1048576 ? `${(n / 1048576).toFixed(n >= 10485760 ? 0 : 1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);
+const mb = sizeText;
 const SITE = { youtube: 'YouTube', instagram: 'Instagram', tiktok: 'TikTok', pinterest: 'Pinterest', direct: 'the link' };
 
 /** Whether this Keep offers a video download or already has its video. @param {any} k */
@@ -39,15 +41,19 @@ export function downloadCard(k, ctx, redraw) {
       const d = k.meta.download; const size = k.meta.file.size;
       fill(box, h('div', { style: { fontWeight: '600' }, text: 'Video saved on this phone' }),
         h('p', { class: 'hint', style: { margin: '4px 0 12px' }, text: `${size ? mb(size) : 'Saved'}${d && d.helper ? '. Got through a helper service.' : ''}${k.meta.hasTranscript ? '' : '. Open the Transcript tab to read what it says.'}` }),
-        h('div', { class: 'vrow' },
+        scrollRow(h('div', { class: 'vrow' },
           h('button', { class: 'chip', onClick: () => openViewer(ctx, k) }, icon('play', 16), 'Watch'),
           ctx.native.files ? h('button', { class: 'chip', onClick: async () => { try { const r = await ctx.repo.files.exportToGallery(k); toast(`Saved in ${r.where || 'your gallery'}`); } catch (e) { toast(ctx.errorText(e)); } } }, icon('download', 16), 'Save to gallery') : null,
-          h('button', { class: 'chip', text: 'Remove the file', onClick: async () => { await ctx.downloads.removeFile(k.id); toast('Video file removed. The Keep stays'); redraw(); } })));
+          h('button', { class: 'chip', text: 'Remove the file', onClick: async () => { await ctx.downloads.removeFile(k.id); toast('Video file removed. The Keep stays'); redraw(); } }))));
       return;
     }
     const failed = j && j.state === 'failed';
+    const sizeLine = h('p', { class: 'hint dl-size', 'aria-live': 'polite', style: { margin: '0 0 12px' }, text: failed ? '' : 'Checking the size' });
+    if (failed) sizeLine.hidden = true;
+    else if (ctx.downloads.size) ctx.downloads.size(k.id).then((n) => { if (box.isConnected) { sizeLine.textContent = n ? `Size: about ${mb(n)}. That is what it will use if you are on mobile data.` : 'Size not shown by the site. You will see it as it downloads.'; sizeLine.dataset.bytes = String(n || 0); } });
     fill(box, h('div', { style: { fontWeight: '600' }, text: failed ? 'Could not download this video' : 'Download this video' }),
-      h('p', { class: 'hint', style: { margin: '4px 0 12px' }, text: failed ? j.error : `Saves the video from ${SITE[videoSite(k)] || 'the link'} on this phone so you can watch it here, read what it teaches, and find the links shown in it.` }),
+      h('p', { class: 'hint', style: { margin: '4px 0 8px' }, text: failed ? j.error : `Saves the video from ${SITE[videoSite(k)] || 'the link'} on this phone so you can watch it here, read what it teaches, and find the links shown in it.` }),
+      sizeLine,
       h('button', { class: 'btn', text: failed ? 'Try again' : 'Download video', onClick: () => ctx.downloads.start(k.id) }),
       failed ? h('button', { class: 'chip', style: { marginLeft: '8px' }, text: 'Helper settings', onClick: () => ctx.router.go('/settings/downloads') }) : null);
   };

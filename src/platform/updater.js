@@ -28,7 +28,7 @@ function parse(id, json) {
     const m = String(json.name || json.tag_name || '').match(/(\d+\.\d+\.\d+)/);
     const asset = (json.assets || []).find((a) => /\.apk$/i.test(a.name || ''));
     if (!m || !asset) return null;
-    return { version: m[1], notes: [], min: '0.0.0', apkUrl: asset.browser_download_url };
+    return { version: m[1], notes: [], min: '0.0.0', apkUrl: asset.browser_download_url, size: Number(asset.size) || 0 };
   }
   const v = String(json.version || '');
   if (!/^\d+\.\d+\.\d+$/.test(v)) return null;
@@ -49,7 +49,7 @@ async function ask(source, fetchImpl, timeoutMs) {
 
 /**
  * @param {{current: string, fetchImpl?: typeof fetch, sources?: typeof SOURCES, timeoutMs?: number}} o
- * @returns {Promise<{status: 'available'|'current'|'unreachable', latest?: string, notes?: string[], mandatory?: boolean, apkUrl?: string, apkConfirmed?: boolean, source?: string, tried: string[]}>}
+ * @returns {Promise<{status: 'available'|'current'|'unreachable', latest?: string, size?: number, notes?: string[], mandatory?: boolean, apkUrl?: string, apkConfirmed?: boolean, source?: string, tried: string[]}>}
  */
 export async function checkForUpdate({ current, fetchImpl = fetch, sources = SOURCES, timeoutMs = 6000 }) {
   const results = await Promise.allSettled(sources.map((s) => ask(s, fetchImpl, timeoutMs)));
@@ -62,8 +62,9 @@ export async function checkForUpdate({ current, fetchImpl = fetch, sources = SOU
   if (compareVersions(pick.version, current) <= 0) return { status: 'current', latest: pick.version, tried };
   // Notes and the minimum version live in version.json. The API answer has neither, so use a file answer for the same version.
   const meta = ok.find((r) => r.version === pick.version && r.source !== 'release-api') || pick;
+  const sized = ok.find((r) => r.version === pick.version && r.size);
   return {
-    status: 'available', latest: pick.version, notes: meta.notes, mandatory: compareVersions(meta.min, current) > 0,
+    status: 'available', latest: pick.version, size: sized ? sized.size : 0, notes: meta.notes, mandatory: compareVersions(meta.min, current) > 0,
     apkUrl: pick.apkUrl, apkConfirmed: pick.apkConfirmed, source: pick.source, tried,
   };
 }

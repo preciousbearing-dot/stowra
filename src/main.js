@@ -1,5 +1,6 @@
 import { createSmart } from './core/vectors.js';
 import { createDownloads } from './core/downloads.js';
+import { createThumbs } from './core/thumbs.js';
 import { openRepository } from './storage/repository.js';
 import { DEFAULT_PREFS, applyPrefs } from './ui/theme/theme.js';
 import { syncNative } from './ui/theme/native-sync.js';
@@ -21,7 +22,7 @@ import { openCapture } from './ui/screens/capture.js';
 import { buildRoutes } from './ui/routes.js';
 import { createLock } from './core/lock.js';
 import { showLock } from './ui/screens/lock.js';
-import { runUpdateCheck } from './ui/screens/about.js';
+import { scheduleUpdatePrompt } from './ui/update-prompt.js';
 import { initBack, setRouter } from './platform/back.js';
 
 /** Boot order: open storage, apply the saved look, show the splash for that look, then route. */
@@ -48,14 +49,15 @@ export async function startApp(root, repo, persistent) {
   const keeps = createKeepService(repo);
   const ai = createAi({ repo, keeps });
   await ai.init();
-  const tools = { ai, native, repo };
+  const thumbs = createThumbs({ keeps, repo, native });
+  const tools = { ai, native, repo, thumbs };
   const pipeline = createPipeline({ keeps, extractors: EXTRACTORS, tools });
   const view = h('div', { id: 'view' });
   const leave = [];
   const lock = await createLock(repo).load();
   const creations = createCreationService(repo);
   const smart = createSmart({ repo, keeps, ai }); await smart.load();
-  const ctx = { repo, keeps, creations, lock, pipeline, ai, smart, native, persistent, router: null, errorText: userMessage, onLeave: (f) => leave.push(f) };
+  const ctx = { repo, keeps, creations, lock, pipeline, ai, smart, native, thumbs, persistent, router: null, errorText: userMessage, onLeave: (f) => leave.push(f) };
   ctx.downloads = createDownloads(ctx);
   window.__stowra = ctx;
   const nav = createNav({ go: (p) => ctx.router.go(p), onAdd: () => openCapture(ctx) });
@@ -80,14 +82,12 @@ export async function startApp(root, repo, persistent) {
   pipeline.resume();
   // Older versions kept files in the database. Move them into the app folder quietly, a few at a time, once the app has settled.
   if (native.files) setTimeout(async () => { try { const moved = await repo.files.migrate(await repo.keeps.all()); if (moved) keeps.bus.emit('changed', { type: 'files-moved' }); } catch (e) { /* try again next start */ } }, 4000);
+  // Videos saved before covers existed get one, a few seconds after the app settles.
+  setTimeout(() => { thumbs.backfill().then((n) => { if (n) keeps.bus.emit('changed', { type: 'thumbs' }); }).catch(() => {}); }, 7000);
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { intake(); pipeline.resume(); } });
   window.addEventListener('online', () => pipeline.resume());
-  // Once a day, quietly look for an update and mention it once.
-  repo.prefs.read('lastUpdateCheck', { at: 0 }).then(async (c) => {
-    if (Date.now() - c.at < 86400000 || !navigator.onLine) return;
-    const r = await runUpdateCheck(ctx).catch(() => null);
-    if (r && r.status === 'available') toast(`Stowra ${r.latest} is ready`, { action: 'See', onAction: () => ctx.router.go('/settings/about') });
-  });
+  // A few seconds after opening, look for an update and offer it in a pop-up with its size.
+  scheduleUpdatePrompt(ctx);
   if (!persistent) toast('Storage is unavailable here, so nothing will be saved.');
 }
 
